@@ -18,17 +18,25 @@ const validateUserRegistration = [
   body('email')
     .isEmail()
     .normalizeEmail()
-    .withMessage('Please provide a valid email'),
+    .withMessage('กรุณากรอกอีเมลให้ถูกต้อง'),
   body('password')
-    .isLength({ min: 6 })
-    .withMessage('Password must be at least 6 characters long'),
-  body('confirmPassword')
-    .custom((value, { req }) => {
-      if (value !== req.body.password) {
-        throw new Error('Password confirmation does not match password');
-      }
-      return true;
-    }),
+    .isLength({ min: 8 })
+    .withMessage('รหัสผ่านต้องมีความยาวอย่างน้อย 8 ตัวอักษร')
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d@$!%*?&]{8,}$/)
+    .withMessage('รหัสผ่านต้องประกอบด้วยตัวพิมพ์เล็ก ตัวพิมพ์ใหญ่ และตัวเลข'),
+  body('fullName')
+    .trim()
+    .isLength({ min: 2 })
+    .withMessage('ชื่อ-นามสกุลต้องมีความยาวอย่างน้อย 2 ตัวอักษร'),
+  body('faculty')
+    .notEmpty()
+    .withMessage('กรุณาเลือกคณะ'),
+  body('major')
+    .optional({ nullable: true })
+    .trim(),
+  body('year')
+    .isInt({ min: 1, max: 10 })
+    .withMessage('ชั้นปีต้องเป็นตัวเลขระหว่าง 1 ถึง 10'),
   handleValidationErrors,
 ];
 

@@ -31,15 +31,14 @@ const register = async (req, res) => {
       });
     }
 
-    const { email, password, confirmPassword } = req.body;
-
-    // Check if passwords match
-    if (password !== confirmPassword) {
-      return res.status(400).json({
-        success: false,
-        message: 'Passwords do not match'
-      });
-    }
+    const { 
+      email, 
+      password, 
+      fullName,
+      faculty,
+      major,
+      year
+    } = req.body;
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
@@ -49,7 +48,7 @@ const register = async (req, res) => {
     if (existingUser) {
       return res.status(400).json({
         success: false,
-        message: 'User already exists with this email'
+        message: 'อีเมลนี้ถูกใช้งานแล้ว'
       });
     }
 
@@ -57,14 +56,18 @@ const register = async (req, res) => {
     const salt = await bcrypt.genSalt(12);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Create user
+    // Create user with complete profile
     const user = await prisma.user.create({
       data: {
         email,
         password: hashedPassword,
+        full_name: fullName,
+        faculty,
+        major,
+        year: parseInt(year),
         role: 'USER',
-        isFirstLogin: true,
-        profileCompleted: false
+        is_first_login: false,
+        profile_completed: true
       }
     });
 
@@ -73,14 +76,18 @@ const register = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: 'User registered successfully',
+      message: 'ลงทะเบียนสำเร็จ',
       data: {
         user: {
           id: user.id,
           email: user.email,
+          fullName: user.full_name,
+          faculty: user.faculty,
+          major: user.major,
+          year: user.year,
           role: user.role,
-          isFirstLogin: user.isFirstLogin,
-          profileCompleted: user.profileCompleted
+          isFirstLogin: user.is_first_login,
+          profileCompleted: user.profile_completed
         },
         token
       }
@@ -90,7 +97,7 @@ const register = async (req, res) => {
     console.error('Register error:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error during registration'
+      message: 'เกิดข้อผิดพลาดในการลงทะเบียน'
     });
   }
 };

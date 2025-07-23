@@ -64,6 +64,7 @@ export const authAPI = {
   getCurrentUser: () => api.get('/auth/me'),
   updateProfile: (data) => api.put('/auth/profile', data),
   logout: () => api.post('/auth/logout'),
+  checkEmail: (email) => api.post('/auth/check-email', { email }),
 };
 
 export const sheetsAPI = {

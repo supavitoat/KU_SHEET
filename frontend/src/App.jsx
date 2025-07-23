@@ -90,9 +90,11 @@ const AppRouter = () => {
             <Route 
               path="/infoEnter" 
               element={
-                <ProtectedRoute>
+                localStorage.getItem('tempRegistration') ? (
                   <InfoEnterPage />
-                </ProtectedRoute>
+                ) : (
+                  <Navigate to="/register" replace />
+                )
               } 
             />
 
