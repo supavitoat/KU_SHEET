@@ -1,0 +1,159 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// User model - Core user information
+model User {
+  id                Int      @id @default(autoincrement())
+  email            String   @unique
+  password         String?  // null for Google OAuth users
+  fullName         String?  @map("full_name")
+  faculty          String?
+  major            String?
+  year             Int?
+  role             Role     @default(USER)
+  googleId         String?  @unique @map("google_id")
+  isSeller         Boolean  @default(false) @map("is_seller")
+  isFirstLogin     Boolean  @default(true) @map("is_first_login")
+  profileCompleted Boolean  @default(false) @map("profile_completed")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  seller Seller?
+  orders Order[]
+
+  @@map("users")
+}
+
+// Seller model - Seller-specific information
+model Seller {
+  id           Int     @id @default(autoincrement())
+  userId       Int     @unique @map("user_id")
+  penName      String  @unique @map("pen_name")
+  realName     String  @map("real_name")
+  phone        String
+  bankName     String  @map("bank_name")
+  bankAccount  String  @map("bank_account")
+  accountName  String  @map("account_name")
+  totalRevenue Float   @default(0) @map("total_revenue")
+  sellerId     String  @unique @map("seller_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sheets Sheet[]
+  orders Order[]
+
+  @@map("sellers")
+}
+
+// Faculty model - University faculties
+model Faculty {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  code        String   @unique
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  subjects Subject[]
+  sheets   Sheet[]
+
+  @@map("faculties")
+}
+
+// Subject model - Academic subjects
+model Subject {
+  id        Int     @id @default(autoincrement())
+  code      String
+  name      String
+  facultyId Int     @map("faculty_id")
+  credits   Int?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  faculty Faculty @relation(fields: [facultyId], references: [id], onDelete: Cascade)
+  sheets  Sheet[]
+
+  @@unique([code, facultyId])
+  @@map("subjects")
+}
+
+// Sheet model - Study materials/notes
+model Sheet {
+  id               Int      @id @default(autoincrement())
+  sellerId         Int      @map("seller_id")
+  facultyId        Int      @map("faculty_id")
+  subjectId        Int      @map("subject_id")
+  title            String
+  subjectCode      String   @map("subject_code")
+  subjectName      String   @map("subject_name")
+  section          String?
+  classTime        String?  @map("class_time")
+  shortDescription String   @map("short_description")
+  longDescription  String?  @map("long_description")
+  type             String   // SheetType as string for SQLite
+  term             String   // Term as string for SQLite  
+  year             Int
+  price            Float    @default(0)
+  coverImage       String?  @map("cover_image")
+  previewImages    String?  @map("preview_images") // JSON as string for SQLite
+  pdfFile          String   @map("pdf_file")
+  adminMessage     String?  @map("admin_message")
+  sellerMessage    String?  @map("seller_message")
+  status           String   @default("PENDING") // Status as string for SQLite
+  downloadCount    Int      @default(0) @map("download_count")
+  isFree           Boolean  @default(false) @map("is_free")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  seller  Seller  @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  faculty Faculty @relation(fields: [facultyId], references: [id], onDelete: Cascade)
+  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  orders  Order[]
+
+  @@map("sheets")
+}
+
+// Order model - Purchase orders
+model Order {
+  id           Int      @id @default(autoincrement())
+  userId       Int      @map("user_id")
+  sheetId      Int      @map("sheet_id")
+  sellerId     Int      @map("seller_id")
+  amount       Float
+  paymentSlip  String?  @map("payment_slip")
+  status       String   @default("PENDING") // Status as string for SQLite
+  paymentDate  DateTime? @map("payment_date")
+  verifiedDate DateTime? @map("verified_date")
+  adminNotes   String?  @map("admin_notes")
+  orderNumber  String   @unique @map("order_number")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sheet  Sheet  @relation(fields: [sheetId], references: [id], onDelete: Cascade)
+  seller Seller @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+
+  @@map("orders")
+}
+
+// Enums
+enum Role {
+  USER
+  ADMIN
+}
