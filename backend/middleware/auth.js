@@ -201,10 +201,45 @@ const rateLimitByUser = (maxRequests = 100, windowMs = 15 * 60 * 1000) => {
   };
 };
 
+// Check if user is admin
+const requireAdmin = async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Not authorized'
+      });
+    }
+
+    // Check if user is admin (role = 'ADMIN' or email is in admin list)
+    const adminEmails = (process.env.ADMIN_EMAILS || '').split(',').map(email => email.trim());
+    
+    const isAdmin = req.user.role === 'ADMIN' || adminEmails.includes(req.user.email);
+
+    if (!isAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: 'Admin access required'
+      });
+    }
+
+    req.isAdmin = true;
+    next();
+
+  } catch (error) {
+    console.error('Require admin middleware error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error in admin authorization'
+    });
+  }
+};
+
 module.exports = {
   protect,
   authorize,
   requireSeller,
+  requireAdmin,
   optionalAuth,
   rateLimitByUser
 };

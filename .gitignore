@@ -1,0 +1,43 @@
+node_modules/
+
+# Environment files — keep only examples tracked
+**/.env
+**/.env.local
+**/.env.*.local
+!**/.env.example
+
+# OS / Editor
+.DS_Store
+.vscode/
+*.swp
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build outputs
+frontend/dist/
+backend/.next/
+
+# Uploads and generated assets
+backend/uploads/
+
+# Databases / Prisma artefacts
+backend/prisma/*.db
+backend/prisma/*.sqlite
+backend/prisma/dev.db
+backend/prisma/dev.backup.db
+backend/prisma/migrations/*
+!backend/prisma/migrations_sqlite_backup/**
+
+# Docker
+**/.dockerignore
+
+# Lockfiles (optional to ignore if you want deterministic builds; keeping tracked by default)
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+

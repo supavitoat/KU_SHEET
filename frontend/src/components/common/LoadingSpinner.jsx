@@ -1,27 +1,37 @@
 import React from 'react';
 
-const LoadingSpinner = ({ className = 'w-5 h-5' }) => {
+const LoadingSpinner = ({ className = 'w-8 h-8' }) => {
   return (
-    <svg
-      className={`animate-spin ${className}`}
-      xmlns="http://www.w3.org/2000/svg"
-      fill="none"
-      viewBox="0 0 24 24"
-    >
-      <circle
-        className="opacity-25"
-        cx="12"
-        cy="12"
-        r="10"
-        stroke="currentColor"
-        strokeWidth="4"
-      />
-      <path
-        className="opacity-75"
-        fill="currentColor"
-        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-      />
-    </svg>
+    <span className={`relative inline-block ${className}`}>
+      <svg
+        className="animate-spin drop-shadow-lg"
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 40 40"
+      >
+        <circle
+          className="opacity-20"
+          cx="20"
+          cy="20"
+          r="16"
+          stroke="#853EF4"
+          strokeWidth="6"
+        />
+        <path
+          d="M36 20c0-8.837-7.163-16-16-16"
+          stroke="url(#spinner-gradient)"
+          strokeWidth="6"
+          strokeLinecap="round"
+        />
+        <defs>
+          <linearGradient id="spinner-gradient" x1="20" y1="4" x2="36" y2="20" gradientUnits="userSpaceOnUse">
+            <stop stopColor="#853EF4" />
+            <stop offset="1" stopColor="#6300FF" />
+          </linearGradient>
+        </defs>
+      </svg>
+      <span className="absolute inset-0 rounded-full blur-[2px] opacity-30 bg-gradient-to-tr from-[#853EF4] to-[#6300FF]" />
+    </span>
   );
 };
 

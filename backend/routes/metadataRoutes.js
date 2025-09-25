@@ -8,13 +8,8 @@ const {
   getYears,
   searchSubjects,
   getThaiFaculties,
-  getAllMetadata,
+  getStats,
 } = require('../controllers/metadataController');
-
-// @route   GET /api/metadata/all
-// @desc    Get all metadata in one call
-// @access  Public
-router.get('/all', getAllMetadata);
 
 // @route   GET /api/metadata/faculties
 // @desc    Get all faculties
@@ -22,7 +17,7 @@ router.get('/all', getAllMetadata);
 router.get('/faculties', getFaculties);
 
 // @route   GET /api/metadata/thai-faculties
-// @desc    Get Thai university faculties (mock data)
+// @desc    Get Thai university faculties (static list)
 // @access  Public
 router.get('/thai-faculties', getThaiFaculties);
 
@@ -50,5 +45,10 @@ router.get('/terms', getTerms);
 // @desc    Get years enum
 // @access  Public
 router.get('/years', getYears);
+
+// @route   GET /api/metadata/stats
+// @desc    Get statistics for StatCards
+// @access  Public
+router.get('/stats', getStats);
 
 module.exports = router;

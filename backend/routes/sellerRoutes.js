@@ -9,13 +9,51 @@ const {
   updateSheet,
   getSellerRevenue,
   deleteSheet,
+  getSellerSheetById,
+  getSellerNotifications,
 } = require('../controllers/sellerController');
 const {
   validateSellerRegistration,
   validateSheetCreation,
 } = require('../middleware/validation');
 const { protect, requireSeller } = require('../middleware/auth');
-const { uploadSheet, handleUploadError } = require('../middleware/upload');
+const upload = require('../middleware/upload');
+const { enforceFieldLimits } = require('../middleware/upload');
+
+// สร้าง upload middleware สำหรับ sheet
+const uploadSheet = upload.fields([
+  { name: 'pdf_file', maxCount: 1 },
+  { name: 'preview_images', maxCount: 10 },
+]);
+
+// Error handling middleware สำหรับ upload
+const handleUploadError = (error, req, res, next) => {
+  if (error instanceof require('multer').MulterError) {
+    if (error.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({
+        success: false,
+        message: 'File too large',
+        details: error.message,
+      });
+    }
+    if (error.code === 'LIMIT_FILE_COUNT') {
+      return res.status(400).json({
+        success: false,
+        message: 'Too many files',
+        details: error.message,
+      });
+    }
+  }
+  
+  if (error.message.includes('Invalid file type')) {
+    return res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
+  
+  next(error);
+};
 
 // @route   POST /api/seller/register
 // @desc    Register as seller
@@ -40,6 +78,7 @@ router.post(
   protect,
   requireSeller,
   uploadSheet,
+  enforceFieldLimits({ pdf_file: 50*1024*1024, preview_images: 2*1024*1024 }),
   handleUploadError,
   validateSheetCreation,
   createSheet
@@ -50,6 +89,11 @@ router.post(
 // @access  Private (Seller)
 router.get('/sheets', protect, requireSeller, getSellerSheets);
 
+// @route   GET /api/seller/sheets/:id
+// @desc    Get seller's sheet by ID
+// @access  Private (Seller)
+router.get('/sheets/:id', protect, requireSeller, getSellerSheetById);
+
 // @route   PUT /api/seller/sheets/:id
 // @desc    Update sheet
 // @access  Private (Seller)
@@ -58,6 +102,7 @@ router.put(
   protect,
   requireSeller,
   uploadSheet,
+  enforceFieldLimits({ pdf_file: 50*1024*1024, preview_images: 2*1024*1024 }),
   handleUploadError,
   validateSheetCreation,
   updateSheet
@@ -72,5 +117,10 @@ router.delete('/sheets/:id', protect, requireSeller, deleteSheet);
 // @desc    Get seller revenue history
 // @access  Private (Seller)
 router.get('/revenue', protect, requireSeller, getSellerRevenue);
+
+// @route   GET /api/seller/notifications
+// @desc    Get seller notifications
+// @access  Private (Seller)
+router.get('/notifications', protect, requireSeller, getSellerNotifications);
 
 module.exports = router;

@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,150 +7,383 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// User model - Core user information
 model User {
-  id                Int      @id @default(autoincrement())
-  email            String   @unique
-  password         String?  // null for Google OAuth users
-  fullName         String?  @map("full_name")
+  id               Int              @id @default(autoincrement())
+  email            String           @unique
+  password         String?
+  fullName         String?          @map("full_name")
   faculty          String?
   major            String?
   year             Int?
-  role             Role     @default(USER)
-  googleId         String?  @unique @map("google_id")
-  isSeller         Boolean  @default(false) @map("is_seller")
-  isFirstLogin     Boolean  @default(true) @map("is_first_login")
-  profileCompleted Boolean  @default(false) @map("profile_completed")
-  createdAt        DateTime @default(now()) @map("created_at")
-  updatedAt        DateTime @updatedAt @map("updated_at")
+  role             String           @default("USER")
+  googleId         String?          @unique @map("google_id")
+  isSeller         Boolean          @default(false) @map("is_seller")
+  isFirstLogin     Boolean          @default(true) @map("is_first_login")
+  profileCompleted Boolean          @default(false) @map("profile_completed")
+  isBanned         Boolean          @default(false) @map("is_banned")
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+  picture          String?          @db.Text @map("picture")
+  orders           Order[]
+  paymentSessions  PaymentSession[]
+  reviews          Review[]
+  seller           Seller?
+  wishlists        Wishlist[]
+  uploadedPayouts Payout[] @relation("PayoutSlipUploader")
+  groupsOrganized Group[] @relation("GroupsOrganizedByUser")
+  groupMemberships GroupMember[] @relation("GroupMemberUser")
+  chatMessages ChatMessage[] @relation("UserChatMessages")
 
-  // Relations
-  seller Seller?
-  orders Order[]
+  // Reports relations
+  reportsFiled   Report[]         @relation("ReportsFiled")
+  reportsAgainst Report[]         @relation("ReportsAgainst")
+
+  // Reputation system
+  reputationScore Float    @default(0) @map("reputation_score")
+  reputationCount Int      @default(0) @map("reputation_count")
+  noShowCount     Int      @default(0) @map("no_show_count")
+  feedbacksGiven     UserFeedback[] @relation("RaterFeedback")
+  feedbacksReceived  UserFeedback[] @relation("TargetFeedback")
+  notifications   Notification[]
 
   @@map("users")
 }
 
-// Seller model - Seller-specific information
 model Seller {
-  id           Int     @id @default(autoincrement())
-  userId       Int     @unique @map("user_id")
-  penName      String  @unique @map("pen_name")
-  realName     String  @map("real_name")
+  id           Int      @id @default(autoincrement())
+  userId       Int      @unique @map("user_id")
+  penName      String   @unique @map("pen_name")
   phone        String
-  bankName     String  @map("bank_name")
-  bankAccount  String  @map("bank_account")
-  accountName  String  @map("account_name")
-  totalRevenue Float   @default(0) @map("total_revenue")
-  sellerId     String  @unique @map("seller_id")
+  bankName     String   @map("bank_name")
+  bankAccount  String   @map("bank_account")
+  accountName  String   @map("account_name")
+  promptPayId  String?  @map("prompt_pay_id")
+  totalRevenue Float    @default(0) @map("total_revenue")
+  sellerId     String   @unique @map("seller_id")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
-
-  // Relations
-  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  sheets Sheet[]
-  orders Order[]
+  orders       Order[]
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sheets       Sheet[]
+  payouts      Payout[]
 
   @@map("sellers")
 }
 
-// Faculty model - University faculties
-model Faculty {
-  id          Int      @id @default(autoincrement())
-  name        String   @unique
-  code        String   @unique
-  description String?
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-
-  // Relations
-  subjects Subject[]
-  sheets   Sheet[]
-
-  @@map("faculties")
-}
-
-// Subject model - Academic subjects
-model Subject {
-  id        Int     @id @default(autoincrement())
-  code      String
-  name      String
-  facultyId Int     @map("faculty_id")
-  credits   Int?
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  // Relations
-  faculty Faculty @relation(fields: [facultyId], references: [id], onDelete: Cascade)
-  sheets  Sheet[]
-
-  @@unique([code, facultyId])
-  @@map("subjects")
-}
-
-// Sheet model - Study materials/notes
 model Sheet {
-  id               Int      @id @default(autoincrement())
-  sellerId         Int      @map("seller_id")
-  facultyId        Int      @map("faculty_id")
-  subjectId        Int      @map("subject_id")
+  id               Int        @id @default(autoincrement())
+  sellerId         Int        @map("seller_id")
+  faculty          String?
+  major            String?
   title            String
-  subjectCode      String   @map("subject_code")
-  subjectName      String   @map("subject_name")
+  subjectCode      String     @map("subject_code")
+  subjectNameJSON  String     @map("subject_name_json")
   section          String?
-  classTime        String?  @map("class_time")
-  shortDescription String   @map("short_description")
-  longDescription  String?  @map("long_description")
-  type             String   // SheetType as string for SQLite
-  term             String   // Term as string for SQLite  
+  shortDescription String     @map("short_description")
+  term             String
   year             Int
-  price            Float    @default(0)
-  coverImage       String?  @map("cover_image")
-  previewImages    String?  @map("preview_images") // JSON as string for SQLite
-  pdfFile          String   @map("pdf_file")
-  adminMessage     String?  @map("admin_message")
-  sellerMessage    String?  @map("seller_message")
-  status           String   @default("PENDING") // Status as string for SQLite
-  downloadCount    Int      @default(0) @map("download_count")
-  isFree           Boolean  @default(false) @map("is_free")
-  createdAt        DateTime @default(now()) @map("created_at")
-  updatedAt        DateTime @updatedAt @map("updated_at")
-
-  // Relations
-  seller  Seller  @relation(fields: [sellerId], references: [id], onDelete: Cascade)
-  faculty Faculty @relation(fields: [facultyId], references: [id], onDelete: Cascade)
-  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
-  orders  Order[]
+  price            Float      @default(0)
+  previewImages    String?    @map("preview_images")
+  pdfFile          String     @map("pdf_file")
+  adminMessage     String?    @map("admin_message")
+  status           String     @default("PENDING")
+  downloadCount    Int        @default(0) @map("download_count")
+  isFree           Boolean    @default(false) @map("is_free")
+  createdAt        DateTime   @default(now()) @map("created_at")
+  updatedAt        DateTime   @updatedAt @map("updated_at")
+  orders           Order[]
+  reviews          Review[]
+  seller           Seller     @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  wishlists        Wishlist[]
+  // relation to groups removed
 
   @@map("sheets")
 }
 
-// Order model - Purchase orders
 model Order {
-  id           Int      @id @default(autoincrement())
-  userId       Int      @map("user_id")
-  sheetId      Int      @map("sheet_id")
-  sellerId     Int      @map("seller_id")
-  amount       Float
-  paymentSlip  String?  @map("payment_slip")
-  status       String   @default("PENDING") // Status as string for SQLite
-  paymentDate  DateTime? @map("payment_date")
-  verifiedDate DateTime? @map("verified_date")
-  adminNotes   String?  @map("admin_notes")
-  orderNumber  String   @unique @map("order_number")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
-
-  // Relations
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  sheet  Sheet  @relation(fields: [sheetId], references: [id], onDelete: Cascade)
-  seller Seller @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  id               Int       @id @default(autoincrement())
+  userId           Int       @map("user_id")
+  sheetId          Int       @map("sheet_id")
+  sellerId         Int       @map("seller_id")
+  amount           Float
+  quantity         Int       @default(1)
+  totalPrice       Float     @default(0) @map("total_price")
+  status           String    @default("PENDING")
+  paymentStatus    String?   @default("PENDING") @map("payment_status")
+  paymentMethod    String?   @default("PENDING") @map("payment_method")
+  isFreeOrder      Boolean   @default(false) @map("is_free_order")
+  verifiedDate     DateTime? @map("verified_date")
+  paidAt           DateTime? @map("paid_at")
+  adminNotes       String?   @map("admin_notes")
+  orderNumber      String    @unique @map("order_number")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+  paymentReference String?   @map("payment_reference")
+  seller           Seller    @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  sheet            Sheet     @relation(fields: [sheetId], references: [id], onDelete: Cascade)
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("orders")
 }
 
-// Enums
-enum Role {
-  USER
-  ADMIN
+model Wishlist {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  sheetId   Int      @map("sheet_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  sheet     Sheet    @relation(fields: [sheetId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, sheetId])
+  @@map("wishlists")
 }
+
+model Review {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  sheetId   Int      @map("sheet_id")
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  sheet     Sheet    @relation(fields: [sheetId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, sheetId])
+  @@map("reviews")
+}
+
+model PaymentSession {
+  id            Int                   @id @default(autoincrement())
+  sessionId     String                @unique @map("session_id")
+  userId        Int                   @map("user_id")
+  amount        Float
+  status        String                @default("PENDING")
+  paymentMethod String                @map("payment_method")
+  orderIds      String                @map("order_ids")
+  metadata      String?
+  // Explicit discount tracking
+  discountCode   String?              @map("discount_code")
+  discountAmount Float?               @map("discount_amount")
+  expiresAt     DateTime              @map("expires_at")
+  completedAt   DateTime?             @map("completed_at")
+  createdAt     DateTime              @default(now()) @map("created_at")
+  updatedAt     DateTime              @updatedAt @map("updated_at")
+  user          User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("payment_sessions")
+}
+
+model Payout {
+  id             Int      @id @default(autoincrement())
+  sellerId       Int      @map("seller_id")
+  amount         Float    @default(0)
+  netAmount      Float    @default(0) @map("net_amount")
+  commission     Float    @default(0)
+  status         String   @default("PENDING")
+  confirmedAt    DateTime? @map("confirmed_at")
+  slipImagePath  String?  @map("slip_image_path")
+  slipUploadDate DateTime? @map("slip_upload_date")
+  slipUploadedBy Int?     @map("slip_uploaded_by")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  
+  seller         Seller   @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  slipUploader   User?    @relation("PayoutSlipUploader", fields: [slipUploadedBy], references: [id])
+
+  @@map("payouts")
+}
+
+/// Application-wide settings (singleton row id=1)
+model AppSettings {
+  id             Int      @id
+  commissionRate Float    @default(15) @map("commission_rate") // percentage (0-100)
+  payoutSchedule String   @default("weekly") @map("payout_schedule") // weekly | monthly
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@map("app_settings")
+}
+
+/// Dedicated table for discount/coupon codes (previously stored in system_settings)
+model DiscountCode {
+  id           Int       @id @default(autoincrement())
+  code         String    @unique
+  type         String    // 'percentage' | 'fixed'
+  value        Float
+  description  String?
+  active       Boolean   @default(true)
+  startsAt     DateTime?
+  endsAt       DateTime?
+  usageLimit   Int?
+  perUserLimit Int?
+  timesUsed    Int       @default(0)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@map("discount_codes")
+  @@index([code])
+}
+
+/// Study group for arranging meetups (onsite/online)
+model Group {
+  id           Int       @id @default(autoincrement())
+  title        String
+  description  String?
+  organizerId  Int       @map("organizer_id")
+  // Onsite fields
+  locationName String?   @map("location_name")
+  address      String?
+  latitude     Float?
+  longitude    Float?
+  // Online field removed
+  // Timing
+  startAt      DateTime  @map("start_at")
+  endAt        DateTime  @map("end_at")
+  // Capacity and policy
+  capacity     Int       @default(10)
+  joinPolicy   String    @default("auto") // auto | approval
+  // visibility removed
+  status       String    @default("upcoming") // upcoming | completed | cancelled
+  // Optional linkage to sheet/subject removed
+
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  // Reminder flags
+  reminderOneHourSent Boolean @default(false) @map("reminder_one_hour_sent")
+
+  // Pinned announcement
+  pinnedAnnouncementText String?
+  pinnedAnnouncementAt   DateTime?
+  pinnedByUserId         Int?
+
+  organizer    User      @relation("GroupsOrganizedByUser", fields: [organizerId], references: [id], onDelete: Cascade)
+  // sheet relation removed
+  members      GroupMember[] @relation("GroupMemberGroup")
+  chat         Chat?     @relation("GroupChat")
+  reports      Report[]
+  feedbacks    UserFeedback[]
+
+  @@map("groups")
+  @@index([organizerId])
+  @@index([startAt])
+}
+
+/// Membership and participation statuses for a group
+model GroupMember {
+  id        Int      @id @default(autoincrement())
+  groupId   Int      @map("group_id")
+  userId    Int      @map("user_id")
+  role      String   @default("member") // organizer | member
+  status    String   @default("pending") // pending | approved | waitlist | rejected | cancelled | checked_in
+  // Timestamp when the member has been checked in to an activity
+  checkedInAt DateTime?
+  joinedAt  DateTime @default(now()) @map("joined_at")
+
+  group     Group    @relation("GroupMemberGroup", fields: [groupId], references: [id], onDelete: Cascade)
+  user      User     @relation("GroupMemberUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+  @@map("group_members")
+  @@index([userId])
+}
+
+/// Chat room for each group
+model Chat {
+  id        Int      @id @default(autoincrement())
+  groupId   Int      @unique @map("group_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  group   Group         @relation("GroupChat", fields: [groupId], references: [id], onDelete: Cascade)
+  messages ChatMessage[] @relation("ChatMessages")
+
+  @@map("chats")
+  @@index([groupId])
+}
+
+/// Individual messages in group chats
+model ChatMessage {
+  id        Int      @id @default(autoincrement())
+  chatId    Int      @map("chat_id")
+  userId    Int      @map("user_id")
+  content   String
+  messageType String @default("text") @map("message_type") // text | image | file
+  createdAt DateTime @default(now()) @map("created_at")
+
+  chat Chat @relation("ChatMessages", fields: [chatId], references: [id], onDelete: Cascade)
+  user User @relation("UserChatMessages", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("chat_messages")
+  @@index([chatId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+/// Reports submitted by users regarding groups or users
+model Report {
+  id             Int       @id @default(autoincrement())
+  reporterId     Int       @map("reporter_id")
+  reportedUserId Int?      @map("reported_user_id")
+  groupId        Int?      @map("group_id")
+  targetType     String    @default("group") // group | user
+  reason         String
+  description    String?
+  status         String    @default("open") // open | in_review | resolved | rejected
+  adminNote      String?
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  reporter     User   @relation("ReportsFiled", fields: [reporterId], references: [id], onDelete: Cascade)
+  reportedUser User?  @relation("ReportsAgainst", fields: [reportedUserId], references: [id])
+  group        Group? @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@map("reports")
+  @@index([status])
+  @@index([groupId])
+  @@index([reportedUserId])
+}
+
+/// User-to-user feedback per group
+model UserFeedback {
+  id           Int      @id @default(autoincrement())
+  targetUserId Int      @map("target_user_id")
+  raterUserId  Int      @map("rater_user_id")
+  groupId      Int      @map("group_id")
+  rating       Int
+  dimensions   Json?
+  tags         Json?
+  comment      String?
+  isPublic     Boolean  @default(false) @map("is_public")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  group  Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  rater  User  @relation("RaterFeedback", fields: [raterUserId], references: [id], onDelete: Cascade)
+  target User  @relation("TargetFeedback", fields: [targetUserId], references: [id], onDelete: Cascade)
+
+  @@unique([targetUserId, raterUserId, groupId])
+  @@map("user_feedbacks")
+}
+
+/// App notifications sent to users
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  type      String   @default("general") // general | order | payment | chat | system
+  title     String
+  body      String?
+  link      String?
+  data      Json?
+  readAt    DateTime? @map("read_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+  @@index([userId])
+  @@index([readAt])
+  @@index([createdAt])
+}
+

@@ -1,93 +1,92 @@
 const { prisma } = require('../config/database');
 const path = require('path');
 const fs = require('fs');
+const { 
+  createSubjectNameJSON, 
+  parseSubjectNameJSON, 
+  getSubjectNameByLanguage, 
+  formatSheetResponse, 
+  prepareSheetData 
+} = require('../utils/subjectNameHelpers');
+const { withPrismaRetry } = require('../utils/prismaRetry');
+const { sanitizePagination } = require('../utils/validation');
+
+function parsePositiveInt(v){ const n = Number(v); return Number.isInteger(n)&&n>0?n:null; }
+function capText(t,max=100){ if(!t||typeof t!=='string') return t; return t.length>max?t.slice(0,max):t; }
 
 // @desc    Get all approved sheets with filters
 // @route   GET /api/sheets
 // @access  Public
 const getSheets = async (req, res) => {
   try {
-    const {
-      page = 1,
-      limit = 12,
-      faculty,
-      term,
-      year,
-      type,
-      search,
-      sort = 'created_at',
-      order = 'DESC',
-    } = req.query;
+    const { page, limit, skip } = sanitizePagination(req.query.page, req.query.limit, { maxLimit: 60, defaultLimit:12 });
+    const { faculty, term, year, type, major, search, seller, sort='createdAt', order='DESC', isFree } = req.query;
 
-    const offset = (page - 1) * limit;
-    const whereClause = { status: 'approved' };
-
-    // Apply filters
-    if (faculty) whereClause.facultyId = Number(faculty);
+    const whereClause = { status:'APPROVED' };
+    if (faculty) whereClause.faculty = faculty;
     if (term) whereClause.term = term;
     if (year) whereClause.year = Number(year);
-    if (type) whereClause.type = type;
+    if (major) whereClause.major = major;
+    if (seller) whereClause.sellerId = Number(seller);
+    if (isFree !== undefined) whereClause.isFree = (isFree === 'true' || isFree === true);
     if (search) {
-      whereClause.OR = [
-        { title: { contains: search, mode: 'insensitive' } },
-        { subjectCode: { contains: search, mode: 'insensitive' } },
-        { subjectName: { contains: search, mode: 'insensitive' } },
-        { shortDescription: { contains: search, mode: 'insensitive' } },
-      ];
+      const s = capText(search,80);
+      whereClause.OR = [ { title:{ contains:s } }, { subjectCode:{ contains:s } }, { major:{ contains:s } }, { shortDescription:{ contains:s } } ];
     }
 
+    const sortFieldMap = { created_at:'createdAt', updated_at:'updatedAt', subject_code:'subjectCode', faculty:'faculty', major:'major', short_description:'shortDescription', preview_images:'previewImages', admin_message:'adminMessage', download_count:'downloadCount', is_free:'isFree' };
+    const mappedSort = sortFieldMap[sort] || sort;
+    const orderDir = order.toLowerCase()==='desc'?'desc':'asc';
+
     const [count, rows] = await Promise.all([
-      prisma.sheet.count({ where: whereClause }),
-      prisma.sheet.findMany({
-        where: whereClause,
-        include: {
-          seller: {
-            select: {
-              penName: true,
-              user: { select: { fullName: true } },
-            },
-          },
-          faculty: { select: { name: true, code: true } },
-          subject: { select: { name: true, code: true } },
-        },
-        skip: Number(offset),
-        take: Number(limit),
-        orderBy: { [sort]: order.toLowerCase() === 'desc' ? 'desc' : 'asc' },
-      }),
+      withPrismaRetry(()=> prisma.sheet.count({ where: whereClause })),
+      withPrismaRetry(()=> prisma.sheet.findMany({ where: whereClause, include:{ seller:{ select:{ penName:true, user:{ select:{ fullName:true, picture:true } } } }, orders: req.user ? { where:{ userId:req.user.id, status:'VERIFIED' }, select:{ id:true }, take:1 } : false }, skip, take: limit, orderBy:{ [mappedSort]: orderDir } }))
     ]);
 
-    res.json({
-      success: true,
-      data: {
-        sheets: rows,
-        pagination: {
-          current_page: parseInt(page),
-          total_pages: Math.ceil(count / limit),
-          total_items: count,
-          items_per_page: parseInt(limit),
-        },
-      },
-    });
+    const sheetIds = rows.map(s=>s.id);
+    let reviewStatsBySheetId = new Map();
+    let downloadStatsBySheetId = new Map();
+    if(sheetIds.length){
+      const [reviewGrouped, downloadGrouped] = await Promise.all([
+        withPrismaRetry(()=> prisma.review.groupBy({ by:['sheetId'], where:{ sheetId:{ in: sheetIds } }, _avg:{ rating:true }, _count:{ _all:true } })),
+        withPrismaRetry(()=> prisma.order.groupBy({ by:['sheetId'], where:{ sheetId:{ in: sheetIds }, status:'VERIFIED' }, _count:{ id:true } }))
+      ]);
+      reviewStatsBySheetId = new Map(reviewGrouped.map(g=>[g.sheetId,{ avgRating:g._avg.rating||0, reviewCount:g._count._all||0 }]));
+      downloadStatsBySheetId = new Map(downloadGrouped.map(g=>[g.sheetId, g._count.id||0]));
+    }
+
+    const formattedSheets = rows.map(sheet => { const formatted = formatSheetResponse(sheet); const stats = reviewStatsBySheetId.get(sheet.id) || { avgRating:0, reviewCount:0 }; formatted.avgRating = stats.avgRating; formatted.reviewCount = stats.reviewCount; formatted.downloadCount = downloadStatsBySheetId.get(sheet.id) || 0; if(req.user) formatted.userHasPurchased = Array.isArray(sheet.orders) && sheet.orders.length>0; return formatted; });
+
+    res.json({ success:true, data:{ sheets:formattedSheets, pagination:{ current_page: page, total_pages: Math.ceil(count/limit), total_items: count, items_per_page: limit } } });
   } catch (error) {
-    console.error('Get sheets error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error',
-      error: error.message,
-    });
+    console.error('[Sheet] getSheets error', { message:error.message, stack:error.stack });
+    res.status(500).json({ success:false, message:'Server error' });
   }
 };
+
+// @desc    Get sheet stats (rating, review count, download count)
+// @route   GET /api/sheets/:id/stats
+// @access  Public
+const getSheetStats = async (req, res) => { try { const sheetId = parsePositiveInt(req.params.id); if(!sheetId) return res.status(400).json({ success:false, message:'Invalid id' }); const [reviewStats, downloadStats] = await Promise.all([
+  withPrismaRetry(()=> prisma.review.aggregate({ where:{ sheetId }, _avg:{ rating:true }, _count:{ id:true } })),
+  withPrismaRetry(()=> prisma.order.aggregate({ where:{ sheetId, status:'VERIFIED' }, _count:{ id:true } }))
+]); const stats = { avgRating: reviewStats._avg.rating||0, reviewCount: reviewStats._count.id||0, downloadCount: downloadStats._count.id||0 }; res.json({ success:true, data: stats }); } catch (error) { console.error('[Sheet] getSheetStats error', { message:error.message, stack:error.stack }); res.status(500).json({ success:false, message:'Server error' }); } };
 
 // @desc    Get sheet by ID
 // @route   GET /api/sheets/:id
 // @access  Public
 const getSheetById = async (req, res) => {
   try {
-    const sheet = await prisma.sheet.findFirst({
-      where: {
-        id: Number(req.params.id),
-        status: 'approved',
-      },
+    const id = parsePositiveInt(req.params.id); if(!id) return res.status(400).json({ success:false, message:'Invalid id' });
+    let whereClause = { id };
+    if (req.user) {
+      if (req.user.seller) {
+        whereClause = { id, OR:[ { status:'APPROVED' }, { sellerId: req.user.seller.id } ] };
+      } else { whereClause = { id, status:'APPROVED' }; }
+    } else { whereClause = { id, status:'APPROVED' }; }
+
+    const sheet = await withPrismaRetry(() => prisma.sheet.findFirst({
+      where: whereClause,
       include: {
         seller: {
           select: {
@@ -95,295 +94,61 @@ const getSheetById = async (req, res) => {
             bankName: true,
             bankAccount: true,
             accountName: true,
-            user: { select: { fullName: true } },
-          },
+            user: { select: { fullName: true, picture: true } }
+          }
         },
-        faculty: { select: { name: true, code: true } },
-        subject: { select: { name: true, code: true } },
-      },
-    });
+        orders: {
+          where: { status: 'VERIFIED' },
+          select: { id: true, status: true },
+          take: 1,
+          orderBy: { createdAt: 'desc' }
+        },
+        reviews: { select: { rating: true } },
+        _count: { select: { reviews: true } }
+      }
+    }));
+    if(!sheet) return res.status(404).json({ success:false, message:'Sheet not found' });
 
-    if (!sheet) {
-      return res.status(404).json({
-        success: false,
-        message: 'Sheet not found',
-      });
-    }
-
-    // Check if user has already purchased this sheet
     let hasPurchased = false;
-    if (req.user) {
-      const existingOrder = await prisma.order.findFirst({
-        where: {
-          userId: req.user.id,
-          sheetId: sheet.id,
-          status: 'verified',
-        },
-      });
-      hasPurchased = !!existingOrder;
-    }
+    if(req.user){ const existingOrder = await withPrismaRetry(()=> prisma.order.findFirst({ where:{ userId:req.user.id, sheetId: sheet.id, status:'VERIFIED' } })); hasPurchased = !!existingOrder; }
 
-    res.json({
-      success: true,
-      data: {
-        sheet,
-        hasPurchased,
-      },
-    });
-  } catch (error) {
-    console.error('Get sheet by ID error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error',
-      error: error.message,
-    });
-  }
+    const ratings = sheet.reviews.map(r=>r.rating); const avgRating = ratings.length? ratings.reduce((a,b)=>a+b,0)/ratings.length : 0; const formattedSheet = formatSheetResponse(sheet); formattedSheet.avgRating = Math.round(avgRating*10)/10; formattedSheet.reviewCount = sheet._count.reviews;
+    try { const filePath = path.join(__dirname,'../uploads/sheets', sheet.pdfFile); const stat = fs.statSync(filePath); formattedSheet.fileSizeBytes = stat.size; } catch {}
+
+    res.json({ success:true, data:{ sheet: formattedSheet, hasPurchased } });
+  } catch (error) { console.error('[Sheet] getSheetById error', { message:error.message, stack:error.stack }); res.status(500).json({ success:false, message:'Server error' }); }
 };
 
 // @desc    Get sheets by faculty
 // @route   GET /api/sheets/faculty/:facultyId
 // @access  Public
-const getSheetsByFaculty = async (req, res) => {
-  try {
-    const { facultyId } = req.params;
-    const {
-      page = 1,
-      limit = 12,
-      term,
-      year,
-      type,
-      search,
-      sort = 'created_at',
-      order = 'DESC',
-    } = req.query;
+const getSheetsByFaculty = async (req, res) => { try { const { facultyId } = req.params; const { page, limit, skip } = sanitizePagination(req.query.page, req.query.limit, { defaultLimit:12, maxLimit:60 }); const { term, year, type, search, sort='created_at', order='DESC' } = req.query; const whereClause = { status:'APPROVED', faculty: facultyId }; if(term) whereClause.term = term; if(year) whereClause.year = Number(year); if(search){ const s = capText(search,80); whereClause.OR = [ { title:{ contains:s, mode:'insensitive' } }, { subjectCode:{ contains:s, mode:'insensitive' } }, { subjectName:{ contains:s, mode:'insensitive' } }, { shortDescription:{ contains:s, mode:'insensitive' } } ]; } const [count, rows] = await Promise.all([ withPrismaRetry(()=> prisma.sheet.count({ where: whereClause })), withPrismaRetry(()=> prisma.sheet.findMany({ where: whereClause, include:{ seller:{ select:{ penName:true } }, orders:{ where:{ status:'VERIFIED' }, select:{ id:true, status:true }, take:1, orderBy:{ createdAt:'desc' } } }, skip, take: limit, orderBy:{ [sort]: order.toLowerCase()==='desc'?'desc':'asc' } })) ]); const sheetIds = rows.map(s=>s.id); let downloadStatsBySheetId = new Map(); if(sheetIds.length){ const downloadGrouped = await withPrismaRetry(()=> prisma.order.groupBy({ by:['sheetId'], where:{ sheetId:{ in: sheetIds }, status:'VERIFIED' }, _count:{ id:true } })); downloadStatsBySheetId = new Map(downloadGrouped.map(g=>[g.sheetId, g._count.id||0])); } const sheetsWithDownloadCount = rows.map(sheet=>({ ...sheet, downloadCount: downloadStatsBySheetId.get(sheet.id)||0 })); res.json({ success:true, data:{ sheets: sheetsWithDownloadCount, pagination:{ current_page: page, total_pages: Math.ceil(count/limit), total_items: count, items_per_page: limit } } }); } catch (error) { console.error('[Sheet] getSheetsByFaculty error', { message:error.message, stack:error.stack }); res.status(500).json({ success:false, message:'Server error' }); } };
 
-    const offset = (page - 1) * limit;
-    const whereClause = {
-      status: 'approved',
-      facultyId: Number(facultyId),
-    };
-
-    // Apply additional filters
-    if (term) whereClause.term = term;
-    if (year) whereClause.year = Number(year);
-    if (type) whereClause.type = type;
-    if (search) {
-      whereClause.OR = [
-        { title: { contains: search, mode: 'insensitive' } },
-        { subjectCode: { contains: search, mode: 'insensitive' } },
-        { subjectName: { contains: search, mode: 'insensitive' } },
-        { shortDescription: { contains: search, mode: 'insensitive' } },
-      ];
-    }
-
-    const [count, rows] = await Promise.all([
-      prisma.sheet.count({ where: whereClause }),
-      prisma.sheet.findMany({
-        where: whereClause,
-        include: {
-          seller: {
-            select: {
-              penName: true,
-              user: { select: { fullName: true } },
-            },
-          },
-          faculty: { select: { name: true, code: true } },
-          subject: { select: { name: true, code: true } },
-        },
-        skip: Number(offset),
-        take: Number(limit),
-        orderBy: { [sort]: order.toLowerCase() === 'desc' ? 'desc' : 'asc' },
-      }),
-    ]);
-
-    res.json({
-      success: true,
-      data: {
-        sheets: rows,
-        pagination: {
-          current_page: parseInt(page),
-          total_pages: Math.ceil(count / limit),
-          total_items: count,
-          items_per_page: parseInt(limit),
-        },
-      },
-    });
-  } catch (error) {
-    console.error('Get sheets by faculty error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error',
-      error: error.message,
-    });
-  }
-};
-
-// @desc    Download sheet file
+// @desc    Download sheet file (requires purchase verification)
 // @route   GET /api/sheets/:id/download
 // @access  Private
-const downloadSheet = async (req, res) => {
-  try {
-    const sheet = await prisma.sheet.findFirst({
-      where: {
-        id: Number(req.params.id),
-        status: 'approved',
-      },
-    });
+const downloadSheet = async (req, res) => { try { const id = parsePositiveInt(req.params.id); if(!id) return res.status(400).json({ success:false, message:'Invalid id' }); const sheet = await withPrismaRetry(()=> prisma.sheet.findFirst({ where:{ id, status:'APPROVED' } })); if(!sheet) return res.status(404).json({ success:false, message:'Sheet not found' }); if(!sheet.isFree){ const order = await withPrismaRetry(()=> prisma.order.findFirst({ where:{ userId:req.user.id, sheetId: sheet.id, status:{ in:['VERIFIED','PAID'] } } })); if(!order) return res.status(403).json({ success:false, message:'You need to purchase this sheet first. Payment verification required.' }); if(!(['PAID','VERIFIED'].includes(order.paymentStatus)) && order.status!=='VERIFIED') return res.status(403).json({ success:false, message:'Payment verification pending. Please wait for admin approval.' }); if(order.status==='CANCELLED') return res.status(403).json({ success:false, message:'This order has been cancelled.' }); }
+  const updatedSheet = await withPrismaRetry(()=> prisma.sheet.update({ where:{ id: sheet.id }, data:{ downloadCount:{ increment:1 } } }));
+  const filePath = path.join(__dirname,'../uploads/sheets', sheet.pdfFile); if(!fs.existsSync(filePath)) return res.status(404).json({ success:false, message:'File not found' }); const safeTitle = `${sheet.title}`.replace(/[\\/:*?"<>|]/g,'_'); res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(safeTitle)}.pdf"`); res.setHeader('Content-Type','application/pdf'); res.sendFile(filePath); } catch (error) { console.error('[Sheet] downloadSheet error', { message:error.message, stack:error.stack }); res.status(500).json({ success:false, message:'Server error' }); } };
 
-    if (!sheet) {
-      return res.status(404).json({
-        success: false,
-        message: 'Sheet not found',
-      });
-    }
-
-    // Check if sheet is free or user has purchased it
-    if (!sheet.isFree) {
-      const order = await prisma.order.findFirst({
-        where: {
-          userId: req.user.id,
-          sheetId: sheet.id,
-          status: 'verified',
-        },
-      });
-
-      if (!order) {
-        return res.status(403).json({
-          success: false,
-          message: 'You need to purchase this sheet first',
-        });
-      }
-    }
-
-    // Increment download count
-    await prisma.sheet.update({
-      where: { id: sheet.id },
-      data: { downloadCount: { increment: 1 } },
-    });
-
-    // Send file
-    const filePath = path.join(__dirname, '../uploads/sheets', sheet.pdfFile);
-    
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).json({
-        success: false,
-        message: 'File not found',
-      });
-    }
-
-    res.download(filePath, `${sheet.title}.pdf`);
-  } catch (error) {
-    console.error('Download sheet error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error',
-      error: error.message,
-    });
-  }
-};
+// @desc    Download free sheet file (no authentication required)
+// @route   GET /api/sheets/:id/download-free
+// @access  Public
+const downloadFreeSheet = async (req, res) => { try { const id = parsePositiveInt(req.params.id); if(!id) return res.status(400).json({ success:false, message:'Invalid id' }); const sheet = await withPrismaRetry(()=> prisma.sheet.findFirst({ where:{ id, status:'APPROVED', isFree:true } })); if(!sheet) return res.status(404).json({ success:false, message:'Free sheet not found' }); await withPrismaRetry(()=> prisma.sheet.update({ where:{ id: sheet.id }, data:{ downloadCount:{ increment:1 } } })); const filePath = path.join(__dirname,'../uploads/sheets', sheet.pdfFile); if(!fs.existsSync(filePath)) return res.status(404).json({ success:false, message:'File not found' }); res.download(filePath, `${sheet.title}.pdf`); } catch (error) { console.error('[Sheet] downloadFreeSheet error', { message:error.message, stack:error.stack }); res.status(500).json({ success:false, message:'Server error' }); } };
 
 // @desc    Get featured/popular sheets
 // @route   GET /api/sheets/featured
 // @access  Public
-const getFeaturedSheets = async (req, res) => {
-  try {
-    const { limit = 8 } = req.query;
-
-    const sheets = await prisma.sheet.findMany({
-      where: { status: 'approved' },
-      include: {
-        seller: { select: { penName: true } },
-        faculty: { select: { name: true, code: true } },
-      },
-      orderBy: [
-        { downloadCount: 'desc' },
-        { createdAt: 'desc' },
-      ],
-      take: Number(limit),
-    });
-
-    res.json({
-      success: true,
-      data: sheets,
-    });
-  } catch (error) {
-    console.error('Get featured sheets error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error',
-      error: error.message,
-    });
-  }
-};
+const getFeaturedSheets = async (req, res) => { try { const { limit=8 } = req.query; const sheets = await withPrismaRetry(()=> prisma.sheet.findMany({ where:{ status:'APPROVED' }, include:{ seller:{ select:{ penName:true } }, orders:{ where:{ status:'VERIFIED' }, select:{ id:true, status:true }, take:1, orderBy:{ createdAt:'desc' } } }, orderBy:[ { downloadCount:'desc' }, { createdAt:'desc' } ], take: Number(limit) })); const sheetIds = sheets.map(s=>s.id); let downloadStatsBySheetId = new Map(); if(sheetIds.length){ const downloadGrouped = await withPrismaRetry(()=> prisma.order.groupBy({ by:['sheetId'], where:{ sheetId:{ in: sheetIds }, status:'VERIFIED' }, _count:{ id:true } })); downloadStatsBySheetId = new Map(downloadGrouped.map(g=>[g.sheetId, g._count.id||0])); } const sheetsWithDownloadCount = sheets.map(sheet=>({ ...sheet, downloadCount: downloadStatsBySheetId.get(sheet.id)||0 })); res.json({ success:true, data: sheetsWithDownloadCount }); } catch (error) { console.error('[Sheet] getFeaturedSheets error', { message:error.message, stack:error.stack }); res.status(500).json({ success:false, message:'Server error' }); } };
 
 // @desc    Search sheets
 // @route   GET /api/sheets/search
 // @access  Public
-const searchSheets = async (req, res) => {
-  try {
-    const { q, page = 1, limit = 12 } = req.query;
+const searchSheets = async (req, res) => { try { const { q, page, limit, skip } = sanitizePagination(req.query.page, req.query.limit, { defaultLimit:12, maxLimit:60, extra: { q:req.query.q } }); const queryString = (req.query.q||'').toString(); if(!queryString) return res.status(400).json({ success:false, message:'Search query is required' }); const qLimited = capText(queryString,80); const whereClause = { status:'APPROVED', OR:[ { title:{ contains:qLimited } }, { subjectCode:{ contains:qLimited } }, { major:{ contains:qLimited } }, { shortDescription:{ contains:qLimited } } ] }; const [count, rows] = await Promise.all([ withPrismaRetry(()=> prisma.sheet.count({ where: whereClause })), withPrismaRetry(()=> prisma.sheet.findMany({ where: whereClause, include:{ seller:{ select:{ penName:true } }, orders:{ where:{ status:'VERIFIED' }, select:{ id:true, status:true }, take:1, orderBy:{ createdAt:'desc' } } }, skip, take: limit, orderBy:{ createdAt:'desc' } })) ]); const sheetIds = rows.map(s=>s.id); let downloadStatsBySheetId = new Map(); if(sheetIds.length){ const downloadGrouped = await withPrismaRetry(()=> prisma.order.groupBy({ by:['sheetId'], where:{ sheetId:{ in: sheetIds }, status:'VERIFIED' }, _count:{ id:true } })); downloadStatsBySheetId = new Map(downloadGrouped.map(g=>[g.sheetId, g._count.id||0])); } const sheetsWithDownloadCount = rows.map(sheet=>({ ...sheet, downloadCount: downloadStatsBySheetId.get(sheet.id)||0 })); res.json({ success:true, data:{ sheets: sheetsWithDownloadCount, pagination:{ current_page: page, total_pages: Math.ceil(count/limit), total_items: count, items_per_page: limit }, query: qLimited } }); } catch (error) { console.error('[Sheet] searchSheets error', { message:error.message, stack:error.stack }); res.status(500).json({ success:false, message:'Server error' }); } };
 
-    if (!q) {
-      return res.status(400).json({
-        success: false,
-        message: 'Search query is required',
-      });
-    }
+// @desc    Get user's purchased sheets
+// @route   GET /api/sheets/my-sheets
+// @access  Private
+const getMySheets = async (req, res) => { try { const { page, limit, skip } = sanitizePagination(req.query.page, req.query.limit, { defaultLimit:10, maxLimit:50 }); const [count, sheets] = await Promise.all([ withPrismaRetry(()=> prisma.order.count({ where:{ userId:req.user.id, status:{ in:['PAID','VERIFIED'] } } })), withPrismaRetry(()=> prisma.order.findMany({ where:{ userId:req.user.id, status:{ in:['PAID','VERIFIED'] } }, include:{ sheet:{ select:{ id:true,title:true,subjectCode:true,faculty:true,major:true,shortDescription:true,price:true,previewImages:true,pdfFile:true,createdAt:true } } }, orderBy:{ createdAt:'desc' }, skip, take: limit })) ]); res.json({ success:true, data:{ sheets: sheets.map(o=>o.sheet), pagination:{ current_page: page, total_pages: Math.ceil(count/limit), total_items: count, items_per_page: limit } } }); } catch (error) { console.error('[Sheet] getMySheets error', { message:error.message, stack:error.stack }); res.status(500).json({ success:false, message:'Server error' }); } };
 
-    const offset = (page - 1) * limit;
-    const whereClause = {
-      status: 'approved',
-      OR: [
-        { title: { contains: q, mode: 'insensitive' } },
-        { subjectCode: { contains: q, mode: 'insensitive' } },
-        { subjectName: { contains: q, mode: 'insensitive' } },
-        { shortDescription: { contains: q, mode: 'insensitive' } },
-      ],
-    };
-
-    const [count, rows] = await Promise.all([
-      prisma.sheet.count({ where: whereClause }),
-      prisma.sheet.findMany({
-        where: whereClause,
-        include: {
-          seller: { select: { penName: true } },
-          faculty: { select: { name: true, code: true } },
-          subject: { select: { name: true, code: true } },
-        },
-        skip: Number(offset),
-        take: Number(limit),
-        orderBy: { createdAt: 'desc' },
-      }),
-    ]);
-
-    res.json({
-      success: true,
-      data: {
-        sheets: rows,
-        pagination: {
-          current_page: parseInt(page),
-          total_pages: Math.ceil(count / limit),
-          total_items: count,
-          items_per_page: parseInt(limit),
-        },
-        query: q,
-      },
-    });
-  } catch (error) {
-    console.error('Search sheets error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error',
-      error: error.message,
-    });
-  }
-};
-
-module.exports = {
-  getSheets,
-  getSheetById,
-  getSheetsByFaculty,
-  downloadSheet,
-  getFeaturedSheets,
-  searchSheets,
-};
+module.exports = { getSheets, getSheetById, getSheetsByFaculty, downloadSheet, downloadFreeSheet, getFeaturedSheets, searchSheets, getMySheets, getSheetStats };

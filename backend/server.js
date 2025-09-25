@@ -1,11 +1,33 @@
 const express = require('express');
+const http = require('http');
 const cors = require('cors');
 const helmet = require('helmet');
 const compression = require('compression');
-const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
+// const fileUpload = require('express-fileupload'); // ปิดการใช้งาน เพราะใช้ multer แล้ว
 require('dotenv').config();
+// Inline environment validation (moved from envCheck.js)
+(() => {
+  const env = process.env.NODE_ENV || 'development';
+  const requiredProd = ['JWT_SECRET'];
+  const missing = requiredProd.filter(k => !process.env[k]);
+  if (missing.length) {
+    if (env === 'production') {
+      console.error(`❌ Missing required environment variables: ${missing.join(', ')}`);
+      process.exit(1);
+    } else {
+      console.warn(`⚠️ Missing optional env in ${env}: ${missing.join(', ')}`);
+    }
+  }
+  if (env === 'production' && process.env.STRIPE_SECRET_KEY && !process.env.STRIPE_WEBHOOK_SECRET) {
+    console.error('❌ STRIPE_SECRET_KEY is set but STRIPE_WEBHOOK_SECRET is missing in production.');
+    process.exit(1);
+  }
+  if (!process.env.CORS_ORIGINS && !process.env.FRONTEND_URL) {
+    console.warn('⚠️ Neither CORS_ORIGINS nor FRONTEND_URL is set. Defaulting to localhost dev origins.');
+  }
+})();
 
 // Import database
 const { prisma, testConnection } = require('./config/database');
@@ -15,14 +37,38 @@ const authRoutes = require('./routes/authRoutes');
 const sheetRoutes = require('./routes/sheetRoutes');
 const sellerRoutes = require('./routes/sellerRoutes');
 const orderRoutes = require('./routes/orderRoutes');
+const paymentRoutes = require('./routes/paymentRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const metadataRoutes = require('./routes/metadataRoutes');
+const wishlistRoutes = require('./routes/wishlistRoutes');
+const reviewRoutes = require('./routes/reviewRoutes');
+const groupRoutes = require('./routes/groupRoutes');
+const chatRoutes = require('./routes/chatRoutes');
+const reputationRoutes = require('./routes/reputationRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
+const reportRoutes = require('./routes/reportRoutes');
+
 
 const app = express();
+const server = http.createServer(app);
 
 // Security middleware
 app.use(helmet({
-  crossOriginResourcePolicy: { policy: "cross-origin" }
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https:"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https:", "http:"],
+      fontSrc: ["'self'", "https:", "data:"],
+  connectSrc: ["'self'", "https:", "http:", "ws:", "wss:"],
+      frameSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      manifestSrc: ["'self'"],
+    },
+  },
 }));
 
 // Compression middleware
@@ -50,20 +96,41 @@ const authLimiter = rateLimit({
   },
 });
 
-// CORS configuration
+// Stripe webhook MUST use raw body, register BEFORE json parser
+app.post('/api/payments/webhook/stripe', express.raw({ type: 'application/json' }), require('./controllers/paymentController').stripeWebhook);
+
+// CORS configuration (origins from env, comma-separated)
+const allowedOrigins = (process.env.CORS_ORIGINS || 'http://localhost:5173,http://127.0.0.1:5173')
+  .split(',')
+  .map(s => s.trim())
+  .filter(Boolean);
+
 const corsOptions = {
-  origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
+  origin: allowedOrigins,
   credentials: true,
   optionsSuccessStatus: 200,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
-  exposedHeaders: ['Content-Range', 'X-Content-Range']
+  exposedHeaders: ['Content-Range', 'X-Content-Range', 'Content-Disposition']
 };
 
 // Apply middlewares
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// File upload middleware
+// ปิดการใช้ express-fileupload เพราะใช้ multer แล้ว
+// app.use(fileUpload({
+//   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+//   abortOnLimit: true,
+//   createParentPath: true,
+//   useTempFiles: true,
+//   tempFileDir: '/tmp/'
+// }));
+
+// Request logging disabled for clean console output
+// Uncomment for debugging: console.log(`🌐 ${req.method} ${req.originalUrl}`);
 
 // Apply rate limiting after CORS
 app.use('/api/', limiter);
@@ -72,14 +139,25 @@ app.use('/api/auth/', authLimiter);
 // Static file serving for uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Health check route
-app.get('/health', (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: 'KU SHEET API is running',
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'ok', 
     timestamp: new Date().toISOString(),
-    version: '1.0.0',
+    uptime: process.uptime(),
+    environment: process.env.NODE_ENV || 'development'
   });
+});
+
+// Readiness probe (lightweight DB ping)
+app.get('/api/ready', async (req, res) => {
+  try {
+    // Simple fast query (no heavy joins)
+    await prisma.$queryRaw`SELECT 1`;
+    res.json({ status: 'ready' });
+  } catch (e) {
+    res.status(503).json({ status: 'degraded', error: e.message });
+  }
 });
 
 // API routes
@@ -87,8 +165,17 @@ app.use('/api/auth', authRoutes);
 app.use('/api/sheets', sheetRoutes);
 app.use('/api/seller', sellerRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/payments', paymentRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/metadata', metadataRoutes);
+app.use('/api/wishlist', wishlistRoutes);
+app.use('/api/reviews', reviewRoutes);
+app.use('/api/groups', groupRoutes);
+app.use('/api', chatRoutes);
+app.use('/api', reputationRoutes);
+app.use('/api', notificationRoutes);
+app.use('/api', reportRoutes);
+
 
 // 404 handler
 app.use('/api/*', (req, res) => {
@@ -102,26 +189,25 @@ app.use('/api/*', (req, res) => {
 app.use((error, req, res, next) => {
   console.error('Global error handler:', error);
 
-  // Sequelize validation errors
-  if (error.name === 'SequelizeValidationError') {
-    const errors = error.errors.map(err => ({
-      field: err.path,
-      message: err.message,
-    }));
-    return res.status(400).json({
-      success: false,
-      message: 'Validation error',
-      errors,
-    });
-  }
+  // Prisma known request errors
+  // Use code matching to map to HTTP status
+  if (error.code) {
+    // Unique constraint violation
+    if (error.code === 'P2002') {
+      return res.status(409).json({
+        success: false,
+        message: 'Resource already exists',
+        meta: error.meta,
+      });
+    }
 
-  // Sequelize unique constraint errors
-  if (error.name === 'SequelizeUniqueConstraintError') {
-    return res.status(409).json({
-      success: false,
-      message: 'Resource already exists',
-      details: error.message,
-    });
+    // Record not found
+    if (error.code === 'P2025') {
+      return res.status(404).json({
+        success: false,
+        message: 'Resource not found',
+      });
+    }
   }
 
   // JWT errors
@@ -148,6 +234,15 @@ app.use((error, req, res, next) => {
     });
   }
 
+  // Busboy/Multipart errors
+  if (error.message && error.message.includes('Unexpected end of form')) {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid form data. Please check your file uploads and try again.',
+      details: 'The form data was incomplete or corrupted during upload.',
+    });
+  }
+
   // Default server error
   res.status(500).json({
     success: false,
@@ -166,13 +261,29 @@ const startServer = async () => {
     
     console.log('✅ Database ready with Prisma');
 
+    // Start schedulers
+    try {
+      const { startGroupReminderScheduler } = require('./schedulers/groupReminder');
+      startGroupReminderScheduler();
+    } catch (e) {
+      console.error('⚠️ Failed to start group reminder scheduler:', e.message);
+    }
+
+    // Socket.IO
+    try {
+      const { initSocket } = require('./realtime/socket');
+      initSocket(server, allowedOrigins);
+      console.log('🧩 Socket.IO initialized');
+    } catch (e) {
+      console.warn('⚠️ Socket.IO initialization skipped:', e.message);
+    }
+
     // Start listening
-    app.listen(PORT, () => {
+    server.listen(PORT, () => {
+      const corsList = (process.env.CORS_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean);
+      const fe = process.env.FRONTEND_URL || corsList[0] || 'http://localhost:5173';
+      console.log(`🔗 Frontend URL: ${fe}`);
       console.log(`🚀 KU SHEET API Server running on port ${PORT}`);
-      console.log(`📱 Environment: ${process.env.NODE_ENV}`);
-      console.log(`🔗 Frontend URL: ${process.env.FRONTEND_URL}`);
-      console.log(`📊 Health check: http://localhost:${PORT}/health`);
-      console.log(`🗃️  Database: Prisma with SQLite`);
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);
@@ -189,10 +300,11 @@ process.on('SIGTERM', async () => {
   process.exit(0);
 });
 
-process.on('SIGINT', async () => {
-  console.log('📡 SIGINT received, shutting down gracefully...');
-  await prisma.$disconnect();
-  process.exit(0);
-});
+// Comment out SIGINT handler to prevent immediate shutdown during development
+// process.on('SIGINT', async () => {
+//   console.log('📡 SIGINT received, shutting down gracefully...');
+//   await prisma.$disconnect();
+//   process.exit(0);
+// });
 
 module.exports = app;
