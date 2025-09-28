@@ -1,6 +1,6 @@
 # KU SHEET — แพลตฟอร์มซื้อ-ขายและแชร์ชีทสรุป ออนไลน์
 
-![KU SHEET Banner1](frontend\src\assets\Review\R1.png)
+![KU SHEET Banner1](frontend/src/assets/Review/R1.png)
 
 [![React](https://img.shields.io/badge/Frontend-React%20%2B%20Vite-61DAFB?logo=react&logoColor=white)](./frontend)
 [![Tailwind CSS](https://img.shields.io/badge/Styles-Tailwind%20CSS-38B2AC?logo=tailwindcss&logoColor=white)](./frontend)
@@ -140,14 +140,14 @@ VITE_GOOGLE_MAPS_API_KEY=your-google-maps-key
 
 หน้าหลัก (ตัวอย่าง UI):
 
-![1](frontend\src\assets\Review\R1.png)
-![2](frontend\src\assets\Review\R2.png)
-![3](frontend\src\assets\Review\R3.png)
-![4](frontend\src\assets\Review\R4.png)
-![5](frontend\src\assets\Review\R5.png)
-![6](frontend\src\assets\Review\R6.png)
-![7](frontend\src\assets\Review\R7.png)
-![8](frontend\src\assets\Review\R8.png)
+![1](frontend/src/assets/Review/R1.png)
+![2](frontend/src/assets/Review/R2.png)
+![3](frontend/src/assets/Review/R3.png)
+![4](frontend/src/assets/Review/R4.png)
+![5](frontend/src/assets/Review/R5.png)
+![6](frontend/src/assets/Review/R6.png)
+![7](frontend/src/assets/Review/R7.png)
+![8](frontend/src/assets/Review/R8.png)
 
 ---
 
