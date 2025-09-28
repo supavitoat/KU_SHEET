@@ -8,7 +8,10 @@ const createUploadDirs = () => {
     path.join(__dirname, '../uploads/sheets'),
     path.join(__dirname, '../uploads/covers'),
     path.join(__dirname, '../uploads/previews'),
-    path.join(__dirname, '../uploads/slips')
+    path.join(__dirname, '../uploads/slips'),
+    // เพิ่มโฟลเดอร์สำหรับรูปโปรไฟล์ (บาง workflow สร้างผ่าน authController แยก แต่สร้างล่วงหน้าเพื่อป้องกัน race)
+    path.join(__dirname, '../uploads/profiles'),
+    path.join(__dirname, '../uploads/misc')
   ];
   
   dirs.forEach(dir => {

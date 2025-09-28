@@ -317,15 +317,19 @@ const SellerProfilePage = () => {
                 type="button"
               >
                 {user?.picture ? (
-                  <img 
-                    src={getProfilePictureURL(user.picture)} 
-                    alt="Profile" 
+                  <img
+                    src={getProfilePictureURL(user.picture)}
+                    alt="Profile"
                     className="w-full h-full object-cover rounded-full"
-                    onLoad={() => {}}
+                    onError={(e) => {
+                      // Fallback: hide broken image & show icon
+                      e.currentTarget.style.display = 'none';
+                      const fallbackIcon = e.currentTarget.parentElement.querySelector('.fallback-user-icon');
+                      if (fallbackIcon) fallbackIcon.style.display = 'block';
+                    }}
                   />
-                ) : (
-                  <UserIcon className="w-24 h-24 text-white drop-shadow-lg" />
-                )}
+                ) : null}
+                <UserIcon className="fallback-user-icon w-24 h-24 text-white drop-shadow-lg" style={{ display: user?.picture ? 'none' : 'block' }} />
               </button>
               
               {/* Camera Icon Overlay */}

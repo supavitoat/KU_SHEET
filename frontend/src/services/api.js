@@ -19,27 +19,44 @@ const getBaseURL = () => {
 
 // Helper function to get full URL for profile pictures
 export const getProfilePictureURL = (picturePath) => {
+  // Default placeholder (could be replaced with a local asset)
+  const fallback = '/default-avatar.svg';
+
   if (!picturePath) {
-    return null;
+    return fallback;
   }
-  
-  // If it's a data URL (base64), return as is
-  if (picturePath.startsWith('data:')) {
-    return picturePath;
+
+  try {
+    // If it's a data URL (base64), return as is
+    if (picturePath.startsWith('data:')) return picturePath;
+
+    // If already absolute HTTP(S)
+    if (/^https?:\/\//i.test(picturePath)) return picturePath;
+
+    // Normalize any duplicate slashes
+    const base = getBaseURL();
+
+    // If backend stored with leading /uploads/...
+    if (picturePath.startsWith('/uploads/')) {
+      return `${base}${picturePath}`.replace(/([^:]\/)(\/)+/g, '$1/');
+    }
+
+    // If it accidentally stored without leading slash but starts with uploads/
+    if (picturePath.startsWith('uploads/')) {
+      return `${base}/${picturePath}`.replace(/([^:]\/)(\/)+/g, '$1/');
+    }
+
+    // If just a filename (contains extension but no path separators)
+    if (!picturePath.includes('/') && /\.(png|jpe?g|webp|gif|svg)$/i.test(picturePath)) {
+      return `${base}/uploads/profiles/${picturePath}`;
+    }
+
+    // Fallback attempt: prepend base
+    return `${base}/${picturePath.replace(/^\/+/, '')}`;
+  } catch (e) {
+    console.warn('getProfilePictureURL error:', e);
+    return fallback;
   }
-  
-  // If it's already a full URL, return as is
-  if (picturePath.startsWith('http')) {
-    return picturePath;
-  }
-  
-  // If it's a relative path, prepend the base URL
-  if (picturePath.startsWith('/')) {
-    return `${getBaseURL()}${picturePath}`;
-  }
-  
-  // If it's just a filename, assume it's in uploads/profiles
-  return `${getBaseURL()}/uploads/profiles/${picturePath}`;
 };
 
 // Request interceptor to add auth token
