@@ -1,17 +1,16 @@
 # KU SHEET — แพลตฟอร์มซื้อ-ขายและแชร์ชีทสรุป ออนไลน์
 
-![KU SHEET Banner](frontend/src/assets/homeimg.png)
+![KU SHEET Banner1](frontend\src\assets\Review\R1.png)
 
 [![React](https://img.shields.io/badge/Frontend-React%20%2B%20Vite-61DAFB?logo=react&logoColor=white)](./frontend)
 [![Tailwind CSS](https://img.shields.io/badge/Styles-Tailwind%20CSS-38B2AC?logo=tailwindcss&logoColor=white)](./frontend)
 [![Node.js](https://img.shields.io/badge/Backend-Node.js%20%2B%20Express-43853D?logo=node.js&logoColor=white)](./backend)
 [![Prisma](https://img.shields.io/badge/ORM-Prisma-2D3748?logo=prisma)](https://www.prisma.io/)
 [![MySQL](https://img.shields.io/badge/DB-MySQL-0F5D95?logo=mysql&logoColor=white)](https://www.mysql.com/)
-[![Socket.IO](https://img.shields.io/badge/Realtime-Socket.IO-010101?logo=socket.io&logoColor=white)](https://socket.io/)
 [![Stripe](https://img.shields.io/badge/Payment-Stripe-635BFF?logo=stripe&logoColor=white)](https://stripe.com/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
-แอปพลิเคชันเว็บเต็มรูปแบบสำหรับนิสิต/นักศึกษาในการซื้อ-ขายและแบ่งปันชีทสรุปบทเรียน พร้อมระบบกลุ่มติว, ห้องแชทเรียลไทม์, รีวิว, Wishlist, การแจ้งเตือน และระบบชำระเงินทั้ง PromptPay และ Stripe
+
+แอปพลิเคชันเว็บเต็มรูปแบบสำหรับนิสิต/นักศึกษาในการซื้อ-ขายและแบ่งปันชีทสรุปบทเรียน พร้อมระบบกลุ่มติว, ห้องแชท, รีวิว, Wishlist, การแจ้งเตือน และระบบชำระเงินทั้ง PromptPay Stripe
 
 ---
 
@@ -30,36 +29,15 @@
 
 ## 🏗️ สถาปัตยกรรมและเทคโนโลยี
 
-```mermaid
-flowchart LR
-  A[React + Vite (Nginx ใน Production)] -- HTTPS --> B[/REST API/]
-  B(Express.js API) -- Prisma ORM --> C[(MySQL 8)]
-  A <--> D((Socket.IO))
-  B <-- Webhook --> E[[Stripe]]
-  B <-- QR / Verify --> F[[PromptPay]]
-  B --- G[(Uploads Storage)]
-
-  subgraph Frontend
-    A
-  end
-
-  subgraph Backend
-    B
-    D
-    G
-  end
-
-  C:::db
-
-classDef db fill:#0f5d95,stroke:#fff,color:#fff;
 ```
-
-เทคโนโลยีหลัก
-- Frontend: React 19, Vite 7, Tailwind CSS, React Router, TanStack Query, Socket.IO Client
-- Backend: Node.js 20, Express 4, Prisma 6, Socket.IO 4, Helmet, Rate Limit, Multer
-- Database: MySQL 8 (Prisma ORM), Prisma Studio สำหรับ dev
-- Payments: Stripe, PromptPay
-- Infra: Dockerfiles แยก front/back, docker-compose บริหาร DB/Backend/Frontend
+- Frontend: React + Vite (Dev), Build เสิร์ฟผ่าน Nginx (Prod)
+- Backend: Express (REST) + Prisma (ORM)
+- Database: MySQL 8
+- Files: จัดเก็บโลคัล `/uploads/{sheets,previews,slips,profiles}`
+- Payments: Stripe (Checkout/Webhook)
+- Realtime: Chat / Notification 
+- Schedulers: งานแจ้งเตือน / งานกลุ่มติว
+- Security: JWT Auth, Helmet, Rate Limit, Validation, Webhook Verify
 
 ---
 
@@ -84,10 +62,6 @@ KUSHEET/
 ---
 
 ## 🚀 การติดตั้งและเริ่มต้นใช้งาน
-
-
-### วิธี A) Dev Local (สำหรับพัฒนา)
-ข้อดี: Hot reload รวดเร็ว เหมาะกับการแก้ UI/API
 
 1) ติดตั้งเครื่องมือ
 - Node.js 20+
@@ -184,15 +158,16 @@ VITE_GOOGLE_MAPS_API_KEY=your-google-maps-key
 
 ## 🖼️ สกรีนช็อต/รูปตัวอย่าง
 
-โลโก้และภาพรวมระบบ:
-
-<p align="left">
-  <img src="frontend/src/assets/logo.png" alt="KU SHEET Logo" height="72" />
-</p>
-
 หน้าหลัก (ตัวอย่าง UI):
 
-![Home](frontend/src/assets/homeimg.png)
+![1](frontend\src\assets\Review\R1.png)
+![2](frontend\src\assets\Review\R2.png)
+![3](frontend\src\assets\Review\R3.png)
+![4](frontend\src\assets\Review\R4.png)
+![5](frontend\src\assets\Review\R5.png)
+![6](frontend\src\assets\Review\R6.png)
+![7](frontend\src\assets\Review\R7.png)
+![8](frontend\src\assets\Review\R8.png)
 
 ---
 

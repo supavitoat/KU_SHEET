@@ -6,12 +6,9 @@ const fs = require('fs');
 const createUploadDirs = () => {
   const dirs = [
     path.join(__dirname, '../uploads/sheets'),
-    path.join(__dirname, '../uploads/covers'),
     path.join(__dirname, '../uploads/previews'),
     path.join(__dirname, '../uploads/slips'),
-    // เพิ่มโฟลเดอร์สำหรับรูปโปรไฟล์ (บาง workflow สร้างผ่าน authController แยก แต่สร้างล่วงหน้าเพื่อป้องกัน race)
-    path.join(__dirname, '../uploads/profiles'),
-    path.join(__dirname, '../uploads/misc')
+    path.join(__dirname, '../uploads/profiles')
   ];
   
   dirs.forEach(dir => {
@@ -46,9 +43,10 @@ const storage = multer.diskStorage({
         uploadPath = path.join(__dirname, '../uploads/slips');
         req.uploadPath = uploadPath;
         break;
-      default:
-        uploadPath = path.join(__dirname, '../uploads/misc');
-        req.uploadPath = uploadPath;
+      default: {
+        // ไม่อนุญาต fieldname ที่ไม่รู้จัก (ก่อนหน้านี้ fallback ไปที่ misc)
+        return cb(new Error(`Unsupported upload field: ${file.fieldname}`));
+      }
     }
     cb(null, uploadPath);
   },
@@ -102,7 +100,10 @@ const storage = multer.diskStorage({
     let originalName = decodeThaiFilename(file.originalname);
     
     // ตรวจสอบว่ามีไฟล์ชื่อเดียวกันอยู่หรือไม่
-    const uploadPath = req.uploadPath || path.join(__dirname, '../uploads/misc');
+    const uploadPath = req.uploadPath; // ถ้าไม่ได้เซ็ต แสดงว่ากระบวนการ destination ปฏิเสธแล้ว
+    if (!uploadPath) {
+      return cb(new Error('Upload path not resolved'));
+    }
     const filePath = path.join(uploadPath, originalName);
     
     if (fs.existsSync(filePath)) {
