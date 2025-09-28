@@ -41,26 +41,6 @@
 
 ---
 
-## 🗂️ โครงสร้างโปรเจกต์ (สรุป)
-```
-KUSHEET/
-├─ docker-compose.yml
-├─ backend/
-│  ├─ server.js                  # Main Express server + routes + middlewares
-│  ├─ controllers/, routes/, middleware/, utils/
-│  ├─ prisma/                    # schema.prisma, dev db, migrations backup
-│  ├─ uploads/                   # previews, profiles, sheets, slips
-│  └─ Dockerfile
-└─ frontend/
-   ├─ src/                       # React app
-   │  ├─ pages/, components/, contexts/, hooks/, services/, utils/
-   │  └─ assets/                 
-   ├─ vite.config.js, tailwind.config.cjs
-   └─ .env.example
-```
-
----
-
 ## 🚀 การติดตั้งและเริ่มต้นใช้งาน
 
 1) ติดตั้งเครื่องมือ
