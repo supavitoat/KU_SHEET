@@ -1,3 +1,4 @@
+# โปรเจ็คส่วนตัวที่กำลังพัฒนา (2025)
 # KU SHEET — แพลตฟอร์มซื้อ-ขายและแชร์ชีทสรุป ออนไลน์
 
 ![KU SHEET Banner1](frontend/src/assets/Review/R1.png)
