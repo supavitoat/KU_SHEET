@@ -298,6 +298,11 @@ const updateProfilePicture = async (req, res) => {
 
     if (!picture) return res.status(400).json({ success: false, message: 'กรุณาเลือกรูปโปรไฟล์' });
 
+    // Fetch current user first so we know the old picture path (do BEFORE any writes)
+    const existingUser = await withPrismaRetry(() => prisma.user.findUnique({ where: { id: userId } }));
+    if (!existingUser) return res.status(404).json({ success: false, message: 'ไม่พบผู้ใช้งาน' });
+    const oldPicture = existingUser.picture || null;
+
     // Ensure upload dir exists
     const uploadDir = path.join(__dirname, '../uploads/profiles');
     if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
@@ -352,6 +357,29 @@ const updateProfilePicture = async (req, res) => {
       data: { picture: savedPath },
       include: { seller: true }
     }));
+
+    // After successful DB update, attempt to delete old local file (best effort)
+    (async () => {
+      try {
+        if (oldPicture && oldPicture !== savedPath && typeof oldPicture === 'string') {
+          // Only delete if it points to our profiles directory
+            // Normalize old picture path (it may or may not start with a leading slash)
+          const normalized = oldPicture.replace(/^\//, '');
+          if (normalized.startsWith('uploads/profiles/')) {
+            const baseDir = path.join(__dirname, '../uploads/profiles');
+            const absOld = path.join(__dirname, '..', normalized); // join to project root
+            // Ensure within baseDir to prevent traversal
+            if (absOld.startsWith(baseDir)) {
+              if (fs.existsSync(absOld)) {
+                await fs.promises.unlink(absOld);
+              }
+            }
+          }
+        }
+      } catch (delErr) {
+        console.warn('[Auth] Failed to delete old profile picture', { userId, oldPicture, err: delErr.message });
+      }
+    })();
 
     res.json({
       success: true,
