@@ -151,10 +151,3 @@ VITE_GOOGLE_MAPS_API_KEY=your-google-maps-key
 ![8](frontend/src/assets/Review/R8.png)
 
 ---
-
-## 📄 License
--
-
----
-
-
