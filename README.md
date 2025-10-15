@@ -107,7 +107,7 @@ MAIL_PORT=587
 MAIL_USER="your-email@gmail.com"
 MAIL_PASS="your-app-password"
 
-# Stripe (ถ้าเปิดใช้งาน Stripe)
+# Stripe (ถ้าเปิดใช้งาน Stripe)cd frontend; npm uninstall @headlessui/react
 STRIPE_SECRET_KEY="sk_test_..."
 STRIPE_WEBHOOK_SECRET="whsec_..."
 ```
@@ -116,6 +116,7 @@ STRIPE_WEBHOOK_SECRET="whsec_..."
 ```powershell
 cd backend
 npm run dev
+stripe listen --forward-to localhost:5000/api/payments/webhook/stripe	
 ```
 
 ### Frontend (`frontend/.env`)
