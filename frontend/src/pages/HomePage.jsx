@@ -1,26 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { sheetsAPI } from '../services/api';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import ProductCard from '../components/common/ProductCard';
 import { CoolMode } from "@/components/magicui/cool-mode";
 import {
-  CloudArrowUpIcon,
-  UserGroupIcon,
   AcademicCapIcon,
-  StarIcon,
-  ArrowRightIcon,
   MagnifyingGlassIcon,
-  SparklesIcon,
-  CogIcon,
-  BeakerIcon,
-  BuildingOfficeIcon,
-  BookOpenIcon,
-  UserIcon,
-  MapIcon,
-  WrenchScrewdriverIcon,
-  SwatchIcon,
-  HeartIcon,
 } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import homeimg from '../assets/homeimg.png';
@@ -31,10 +16,9 @@ import logoSawad from '../assets/โลโก้คณะศวท.png';
 import logoSueksa from '../assets/โลโก้คณะศึกษา.png';
 import logoSattaw from '../assets/โลโก้คณะสัตวแพทย์.png';
 import logoOb from '../assets/โลโก้คณะอบ.png';
-// Removed unused shared utils imports
+import axios from 'axios';
 
 const HomePage = () => {
-  // Toast แสดงหลังสมัคร/กรอกฟอร์ม infoEnter สำเร็จ
   React.useEffect(() => {
     if (sessionStorage.getItem('showLoginToast') === '1') {
       toast.success('🎉 ยินดีต้อนรับ! เข้าสู่ระบบสำเร็จแล้ว');
@@ -42,31 +26,26 @@ const HomePage = () => {
     }
   }, []);
   
-  // Auth and wishlist not needed on Home page UI
   const [searchQuery, setSearchQuery] = useState('');
-  // const [selectedFaculty, setSelectedFaculty] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isLoadingDefault, setIsLoadingDefault] = useState(true);
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+  const [stats, setStats] = useState({ totalSheets: 0, totalUsers: 0 });
 
-  // Removed faculties query (not used in this page)
-
-  // Load default sheets on component mount
   useEffect(() => {
     loadDefaultSheets();
+    loadStats();
   }, []);
 
-  // Debounce search query
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearchQuery(searchQuery);
-    }, 300); // 300ms delay
+    }, 300); 
 
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Enhanced scroll functionality
   useEffect(() => {
     const scrollContainer = document.querySelector('.custom-scrollbar');
     const progressBar = document.getElementById('scroll-progress');
@@ -104,8 +83,7 @@ const HomePage = () => {
       };
 
       scrollContainer.addEventListener('scroll', updateScrollProgress);
-      updateScrollProgress(); // Initial update
-      
+      updateScrollProgress(); 
       return () => {
         scrollContainer.removeEventListener('scroll', updateScrollProgress);
       };
@@ -157,35 +135,31 @@ const HomePage = () => {
     }
   };
 
+  const loadStats = async () => {
+    try {
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/metadata/stats`);
+      if (response.data.success) {
+        setStats({
+          totalSheets: response.data.data.totalSheets || 0,
+          totalUsers: response.data.data.totalUsers || 0
+        });
+      }
+    } catch (error) {
+      console.error('Error loading stats:', error);
+    }
+  };
+
   const handleSearch = async (e) => {
     e.preventDefault();
-    // For form submission, we can keep the existing logic or remove it since we have real-time search
-    // For now, let's just prevent the default form submission
     e.preventDefault();
   };
 
   const clearSearch = () => {
     setSearchQuery('');
     setDebouncedSearchQuery('');
-    // loadDefaultSheets will be called automatically by the useEffect
   };
-
-  // const handleFacultySelect = (facultyId) => {
-  //   window.location.href = `/shop?faculty=${facultyId}`;
-  // };
-
-  // Helpers moved to shared utils (formatCurrency, formatDate, getFacultyColors)
-
-  // Removed unused local formatDate helper
-
-  // Remove toggleWishlist function as it's now handled by WishlistContext
-
-  // Faculty data with logos and colors
-  // Removed unused facultyData list (using direct logo blocks below)
-
       return (
       <div className="min-h-screen bg-white relative">
-
         {/* Hero Section */}
         <section className="relative overflow-hidden">
           <div className="w-full pt-0 pb-2 px-4 lg:px-24 relative z-10">
@@ -225,11 +199,15 @@ const HomePage = () => {
                 {/* Stats */}
                 <div className="grid grid-cols-2 gap-6 md:flex md:gap-8 mb-6 md:mb-8 animate-fade-in-up animation-delay-400 justify-center md:justify-start">
                   <div className="text-center">
-                    <div className="text-xl md:text-2xl font-bold text-purple-600">1,000+</div>
+                    <div className="text-xl md:text-2xl font-bold text-purple-600">
+                      {stats.totalSheets > 0 ? `${stats.totalSheets.toLocaleString()}+` : '...'}
+                    </div>
                     <div className="text-xs md:text-sm text-gray-600">ชีทสรุป</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-xl md:text-2xl font-bold text-blue-600">500+</div>
+                    <div className="text-xl md:text-2xl font-bold text-blue-600">
+                      {stats.totalUsers > 0 ? `${stats.totalUsers.toLocaleString()}+` : '...'}
+                    </div>
                     <div className="text-xs md:text-sm text-gray-600">ผู้ใช้งาน</div>
                   </div>
                 </div>

@@ -172,9 +172,10 @@ const getStats = async (_req, res) => {
   try {
     const totalDownloads = await prisma.order.count({ where: { status: 'VERIFIED' } });
     const totalSheets = await prisma.sheet.count({ where: { status: 'APPROVED' } });
+    const totalUsers = await prisma.user.count();
     const ratingStats = await prisma.review.aggregate({ _avg: { rating: true }, _count: { rating: true } });
     const averageRating = ratingStats._avg.rating || 0;
-  res.json({ success: true, data: { totalDownloads, averageRating, totalSheets } });
+  res.json({ success: true, data: { totalDownloads, averageRating, totalSheets, totalUsers } });
   } catch (error) {
   console.error('[Metadata] getStats error', { message: error.message, stack: error.stack });
     res.status(500).json({ success: false, message: 'Server error while fetching stats' });
