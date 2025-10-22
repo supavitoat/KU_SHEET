@@ -400,7 +400,7 @@ const SheetDetailPage = () => {
                 ) : (
                   <div className="text-3xl font-bold text-blue-600 mb-2">฿{sheet.price}</div>
                 )}
-                <p className="text-gray-600">ดาวน์โหลดได้ทันที</p>
+                <p className="text-gray-600">ดาวน์โหลด</p>
               </div>
 
               {/* Action Buttons */}

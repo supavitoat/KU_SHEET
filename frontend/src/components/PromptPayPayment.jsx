@@ -300,7 +300,7 @@ const PromptPayPayment = ({ items, onSuccess, onCancel }) => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    ชื่อธนาคาร (ไม่บังคับ)
+                    ชื่อธนาคาร
                   </label>
                   <input
                     type="text"

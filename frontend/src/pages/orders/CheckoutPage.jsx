@@ -91,15 +91,7 @@ const CheckoutPage = () => {
   
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100 relative overflow-hidden">
-      {/* Animated Background */}
-      <div className="absolute inset-0 z-0">
-        <div className="absolute w-96 h-96 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob" style={{ background: 'linear-gradient(45deg, #ff6b6b)', left: '20%', top: '20%' }}></div>
-        <div className="absolute w-96 h-96 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob2" style={{ background: 'linear-gradient(45deg, #4ecdc4)', left: '35%', top: '30%' }}></div>
-        <div className="absolute w-96 h-96 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob3" style={{ background: 'linear-gradient(45deg, #45b7d1)', left: '50%', top: '40%' }}></div>
-        <div className="absolute w-96 h-96 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-2000" style={{ background: 'linear-gradient(45deg, #96ceb4)', left: '65%', top: '50%' }}></div>
-        <div className="absolute w-96 h-96 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob2 animation-delay-4000" style={{ background: 'linear-gradient(45deg, #feca57)', left: '80%', top: '60%' }}></div>
-      </div>
+    <div className="min-h-screen bg-white relative overflow-hidden">
 
       {/* Header */}
       <div className="bg-transparent relative z-10">

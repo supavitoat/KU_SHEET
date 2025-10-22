@@ -33,6 +33,14 @@ if (!isMock) {
   transporter = {
     sendMail: async (opts) => {
       console.log('📧 [MOCK MAIL] To:', opts.to, '| Subject:', opts.subject);
+      // Try extract first URL from html/text for convenience
+      try {
+        const body = (opts.html || opts.text || '').toString();
+        const urlMatch = body.match(/https?:\/\/[^\s"']+/);
+        if (urlMatch) {
+          console.log('🔗 [MOCK MAIL LINK]:', urlMatch[0]);
+        }
+      } catch (_) {}
       return { mock: true, accepted: [opts.to], messageId: `mock-${Date.now()}` };
     }
   };

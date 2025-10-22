@@ -32,8 +32,6 @@ import AdminFinancePage from './pages/admin/AdminFinancePage';
 import PayoutPage from './pages/admin/PayoutPage';
 import GroupsManagePage from './pages/admin/GroupsManagePage';
 import DiscountCodesPage from './pages/admin/DiscountCodesPage';
-
-
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
 import ResetPasswordPage from './pages/auth/ResetPasswordPage';
 import TermsPage from './pages/TermsPage';
@@ -41,39 +39,28 @@ import PrivacyPage from './pages/PrivacyPage';
 import WishlistPage from './pages/WishlistPage';
 import CartPage from './pages/orders/CartPage';
 import CheckoutPage from './pages/orders/CheckoutPage';
-
 import ContactPage from './pages/ContactPage';
 import FAQPage from './pages/FAQPage';
-
 import FacultySheetsPage from './pages/FacultySheetsPage';
 import SubjectSheetsPage from './pages/SubjectSheetsPage';
 import ReviewsPage from './pages/ReviewsPage';
 import NotificationsPage from './pages/notifications/NotificationsPage';
-
-// Groups pages (legacy)
 import GroupDetailPage from './pages/groups/GroupDetailPage';
-
-// Study Groups new routes
 import StudyGroupCreatePage from './pages/study-groups/CreatePage';
 import StudyGroupEditPage from './pages/study-groups/EditPage';
 import StudyGroupsListPage from './pages/study-groups/ListPage';
-
-// Import components
 import Navbar from './components/common/Navbar';
 import Footer from './components/common/Footer';
 import LoadingSpinner from './components/common/LoadingSpinner';
 import ProtectedRoute from './components/auth/ProtectedRoute';
-
-import { CoolMode } from "@/components/magicui/cool-mode";
-import { AuroraText } from "@/components/magicui/aurora-text";
 
 // Create a client for React Query
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 2,
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      cacheTime: 10 * 60 * 1000, // 10 minutes
+      staleTime: 5 * 60 * 1000, 
+      cacheTime: 10 * 60 * 1000, 
     },
   },
 });

@@ -495,7 +495,7 @@ const OrderHistoryPage = () => {
               rows={4}
               value={reviewModal.comment}
               onChange={(e) => setReviewModal(prev => ({ ...prev, comment: e.target.value }))}
-              placeholder="เขียนความเห็นของคุณ (ไม่บังคับ)"
+              placeholder="เขียนความเห็นของคุณ"
               className="w-full border border-gray-300 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-300 hover:border-purple-400"
             />
             <div className="mt-4 flex justify-end gap-3">

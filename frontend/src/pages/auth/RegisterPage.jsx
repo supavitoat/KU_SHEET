@@ -167,28 +167,8 @@ const RegisterPage = () => {
   }, [handleGoogleResponse]);
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100">
-      {/* Animated Background Elements */}
-      <div className="absolute inset-0 pointer-events-none">
-        {/* Random colored circles with blob animation */}
-        <div className="absolute top-10 left-10 w-80 h-80 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
-        <div className="absolute top-20 right-20 w-72 h-72 bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full mix-blend-multiply filter blur-3xl opacity-25 animate-blob animation-delay-2000"></div>
-        <div className="absolute bottom-20 left-1/3 w-96 h-96 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
-        <div className="absolute top-1/2 left-1/4 w-64 h-64 bg-gradient-to-r from-green-400 to-teal-400 rounded-full mix-blend-multiply filter blur-3xl opacity-25 animate-blob animation-delay-1000"></div>
-        <div className="absolute bottom-1/3 right-1/4 w-88 h-88 bg-gradient-to-r from-red-400 to-pink-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-3000"></div>
-        <div className="absolute top-1/3 right-1/3 w-56 h-56 bg-gradient-to-r from-indigo-400 to-purple-400 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-5000"></div>
-        <div className="absolute bottom-10 left-1/2 w-104 h-104 bg-gradient-to-r from-orange-400 to-red-400 rounded-full mix-blend-multiply filter blur-3xl opacity-15 animate-blob animation-delay-6000"></div>
-        <div className="absolute top-1/4 left-1/2 w-48 h-48 bg-gradient-to-r from-teal-400 to-blue-400 rounded-full mix-blend-multiply filter blur-3xl opacity-25 animate-blob animation-delay-1500"></div>
-        <div className="absolute bottom-1/4 right-10 w-72 h-72 bg-gradient-to-r from-pink-400 to-rose-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-3500"></div>
-        <div className="absolute top-3/4 left-1/6 w-64 h-64 bg-gradient-to-r from-cyan-400 to-blue-400 rounded-full mix-blend-multiply filter blur-3xl opacity-25 animate-blob animation-delay-2500"></div>
-        
-        {/* Additional smaller circles for more variety */}
-        <div className="absolute top-1/6 right-1/6 w-40 h-40 bg-gradient-to-r from-emerald-400 to-green-400 rounded-full mix-blend-multiply filter blur-2xl opacity-20 animate-blob animation-delay-7000"></div>
-        <div className="absolute bottom-1/6 left-1/6 w-32 h-32 bg-gradient-to-r from-violet-400 to-purple-400 rounded-full mix-blend-multiply filter blur-2xl opacity-25 animate-blob animation-delay-4500"></div>
-        <div className="absolute top-2/3 right-1/4 w-56 h-56 bg-gradient-to-r from-amber-400 to-yellow-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-1800"></div>
-        <div className="absolute bottom-2/3 left-2/3 w-48 h-48 bg-gradient-to-r from-sky-400 to-blue-400 rounded-full mix-blend-multiply filter blur-2xl opacity-30 animate-blob animation-delay-3200"></div>
-        <div className="absolute top-1/2 right-1/6 w-80 h-80 bg-gradient-to-r from-fuchsia-400 to-pink-400 rounded-full mix-blend-multiply filter blur-3xl opacity-15 animate-blob animation-delay-5500"></div>
-      </div>
+    <div className="min-h-screen relative overflow-hidden bg-white">
+      {/* Animated Background Elements - REMOVED */}
 
       {/* Main Content */}
       <div className="relative z-10 min-h-screen flex items-center justify-between p-8">

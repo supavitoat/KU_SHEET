@@ -12,6 +12,7 @@ import {
   BookOpenIcon,
   UserIcon,
   CalendarIcon,
+  ArrowDownTrayIcon,
   EyeIcon,
   HeartIcon,
 } from '@heroicons/react/24/outline';
@@ -360,7 +361,7 @@ const CartPage = () => {
                               <span>{formatDate(item.createdAt)}</span>
                             </div>
                             <div className="flex items-center gap-1">
-                              <EyeIcon className="w-4 h-4" />
+                      <ArrowDownTrayIcon className="w-4 h-4" />
                               <span>{item.downloadCount || 0} ดาวน์โหลด</span>
                             </div>
                             <div className="flex items-center gap-1">
