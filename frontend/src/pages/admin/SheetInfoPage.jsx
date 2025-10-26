@@ -19,7 +19,8 @@ import toast from 'react-hot-toast';
 
 const SheetInfoPage = () => {
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
-  const [rejectLoading, setRejectLoading] = useState(false);
+  // We only need the setter for loading side-effects; omit state to satisfy lint
+  const [, setRejectLoading] = useState(false);
   const { id } = useParams();
   const navigate = useNavigate();
   const [sheet, setSheet] = useState(null);

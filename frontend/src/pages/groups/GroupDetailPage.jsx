@@ -456,10 +456,7 @@ const GroupDetailPage = () => {
               <button onClick={() => setShowReport(true)} className="w-full rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-700 py-2 transition-smooth">รายงานปัญหากลุ่มนี้</button>
             )}
           </div>
-          {/* Report group button */}
-          <div className="mt-3">
-            <button onClick={() => setShowReport(true)} className="w-full rounded-xl bg-red-50 text-red-700 py-2 hover:bg-red-100 transition-smooth text-sm">รายงานปัญหากลุ่มนี้</button>
-          </div>
+          {/* Removed duplicate report button to keep a single entry point */}
         </div>
 
         {/* Right column: members list and notes */}

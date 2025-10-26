@@ -37,15 +37,7 @@ const Navbar = () => {
   const location = useLocation();
   const userMenuRef = useRef(null);
   
-  // Compute a display name that shows only the first token of the full name
-  const displayName = useMemo(() => {
-    const raw = (user?.fullName || user?.full_name || '').trim();
-    if (raw) {
-      const first = raw.split(/\s+/)[0];
-      return first || raw;
-    }
-    return user?.email || '';
-  }, [user?.fullName, user?.full_name, user?.email]);
+  // Removed unused displayName to satisfy lint rule no-unused-vars
 
   // Full name for dropdowns (first + last if provided)
   const fullName = useMemo(() => {
