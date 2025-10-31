@@ -106,6 +106,14 @@ const DiscountForm = ({ onSubmit, loading, initial }) => {
   const [endTime, setEndTime] = React.useState(initEnd.time);
   const [usageLimit, setUsageLimit] = React.useState(initial?.usageLimit ?? '');
   const [perUserLimit, setPerUserLimit] = React.useState(initial?.perUserLimit ?? '');
+  // Today's date in local yyyy-mm-dd format used to prevent selecting past dates
+  const today = React.useMemo(() => {
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  }, []);
 
   const submit = (e) => {
     e.preventDefault();
@@ -151,13 +159,32 @@ const DiscountForm = ({ onSubmit, loading, initial }) => {
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="block text-sm font-medium">เริ่มใช้ (วันที่)</label>
-          <input type="date" value={startDate} onChange={e=>setStartDate(e.target.value)} className="mt-1 w-full border rounded px-3 py-2" />
+          {/* Prevent selecting past dates: set min to today's local date and clamp on change */}
+          <input
+            type="date"
+            value={startDate}
+            min={today}
+            onChange={e=>{
+              const val = e.target.value;
+              setStartDate(val >= today ? val : today);
+            }}
+            className="mt-1 w-full border rounded px-3 py-2"
+          />
           <label className="block text-xs text-gray-500 mt-2">เวลา (24 ชม.)</label>
           <div className="mt-1"><TimeField24Inline value={startTime} onChange={setStartTime} /></div>
         </div>
         <div>
           <label className="block text-sm font-medium">สิ้นสุด (วันที่)</label>
-          <input type="date" value={endDate} onChange={e=>setEndDate(e.target.value)} className="mt-1 w-full border rounded px-3 py-2" />
+          <input
+            type="date"
+            value={endDate}
+            min={today}
+            onChange={e=>{
+              const val = e.target.value;
+              setEndDate(val >= today ? val : today);
+            }}
+            className="mt-1 w-full border rounded px-3 py-2"
+          />
           <label className="block text-xs text-gray-500 mt-2">เวลา (24 ชม.)</label>
           <div className="mt-1"><TimeField24Inline value={endTime} onChange={setEndTime} /></div>
         </div>
