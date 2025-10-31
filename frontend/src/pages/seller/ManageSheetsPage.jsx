@@ -18,7 +18,6 @@ import {
   ChevronDownIcon
 } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
-import Swal from 'sweetalert2';
 
 // removed unused random gradient/icon helpers
 
@@ -125,32 +124,7 @@ const ManageSheetsPage = () => {
 
   // (moved filterAndSortSheets above)
 
-  const handleDeleteSheet = async (sheetId) => {
-    const result = await Swal.fire({
-      title: 'ลบชีทนี้?',
-      text: 'คุณแน่ใจหรือไม่ว่าต้องการลบชีทนี้ (ไม่สามารถกู้คืนได้)',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#e53e3e',
-      cancelButtonColor: '#a0aec0',
-      confirmButtonText: 'ลบ',
-      cancelButtonText: 'ยกเลิก',
-      reverseButtons: true,
-      customClass: {
-        actions: 'swal2-actions-stretch',
-      },
-    });
-
-    if (result.isConfirmed) {
-      try {
-        await sellerAPI.deleteSheet(sheetId);
-        Swal.fire('ลบสำเร็จ!', 'ชีทถูกลบเรียบร้อยแล้ว', 'success');
-        fetchSheets(false);
-  } catch {
-        Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถลบชีทได้', 'error');
-      }
-    }
-  };
+  // Delete action removed - UI no longer exposes a delete button here.
 
   const getStatusBadge = (status) => {
     switch (status) {
