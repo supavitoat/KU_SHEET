@@ -6,7 +6,6 @@ import {
   DocumentTextIcon,
   ChartBarIcon,
   PencilIcon,
-  TrashIcon,
   MagnifyingGlassIcon,
   FunnelIcon,
   EyeIcon,
@@ -249,7 +248,7 @@ const ManageSheetsPage = () => {
       };
     }
     
-    if (name.includes('สัตวแพทย')) {
+    if (name.includes('สัตวแพทย์')) {
       return {
         gradient: 'from-[#0EA5E9] via-[#38BDF8] to-[#7DD3FC]',
         iconColor: 'text-blue-800'
@@ -595,13 +594,7 @@ const ManageSheetsPage = () => {
                         <EyeIcon className="w-4 h-4" />
                         ดู
                       </Link>
-                      <button
-                        onClick={() => handleDeleteSheet(sheet.id)}
-                        className="w-20 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors flex items-center justify-center gap-2"
-                      >
-                        <TrashIcon className="w-4 h-4" />
-                        ลบ
-                      </button>
+                      {/* Delete button removed as requested */}
                     </div>
                   </div>
                 </div>

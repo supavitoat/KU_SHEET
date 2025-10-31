@@ -5,7 +5,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "concurrently -k \"stripe listen --forward-to https://kusheet-backend.onrender.com/api/payments/webhook/stripe\" \"nodemon server.js\"",
+    "dev": "nodemon server.js",
     "seed": "node prisma/seed.js",
     "postinstall": "npx prisma generate",
     "prisma:deploy": "npx prisma migrate deploy",
@@ -42,11 +42,10 @@
     "google-auth-library": "^10.1.0",
     "helmet": "^8.0.0",
     "jsonwebtoken": "^9.0.2",
-    "multer": "^2.0.0",
-    "nodemailer": "^7.0.5",
-    "socket.io": "^4.7.5",
-    "stripe": "^14.23.0",
-    "concurrently": "^8.2.0"
+  "multer": "^2.0.0",
+  "nodemailer": "^7.0.5",
+  "socket.io": "^4.7.5",
+    "stripe": "^14.23.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.7",
