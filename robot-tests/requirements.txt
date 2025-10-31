@@ -1,0 +1,9 @@
+# KU-SHEET Test Requirements
+
+# API Testing
+robotframework>=6.1.0
+robotframework-requests>=0.9.5
+requests>=2.31.0
+
+# UI Testing (Browser Automation)
+robotframework-browser>=17.0.0

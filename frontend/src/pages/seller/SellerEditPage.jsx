@@ -92,9 +92,11 @@ const SellerEditPage = () => {
       newErrors.penName = 'ชื่อปากกาต้องมีความยาวไม่เกิน 50 ตัวอักษร';
     }
 
-    // Validate phone number format if provided
-    if (formData.phone.trim() && !/^0[2-9]\d{7,8}$/.test(formData.phone.trim().replace(/[-\s]/g, ''))) {
-      newErrors.phone = 'กรุณากรอกเบอร์โทรให้ถูกต้อง';
+    // Normalize phone by removing spaces/dashes
+    const phoneDigits = (formData.phone || '').toString().replace(/[-\s]/g, '');
+    if (phoneDigits && !/^0[0-9]{9}$/.test(phoneDigits)) {
+      // Require exactly 10 digits and must start with 0
+      newErrors.phone = 'กรุณากรอกเบอร์โทรศัพท์ให้ครบ 10 ตัวและขึ้นต้นด้วย 0 (เช่น 0812345678)';
     }
 
     // Validate bank account format if provided
@@ -107,7 +109,12 @@ const SellerEditPage = () => {
   };
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
+    let { name, value } = e.target;
+    // For phone field: allow only digits and limit to 10 characters
+    if (name === 'phone') {
+      value = (value || '').toString().replace(/\D/g, '');
+      if (value.length > 10) value = value.slice(0, 10);
+    }
     setFormData(prev => {
       const newData = { ...prev, [name]: value };
       return newData;
@@ -367,6 +374,22 @@ const SellerEditPage = () => {
                     name="phone"
                     value={formData.phone}
                     onChange={handleInputChange}
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={10}
+                    onPaste={(e) => {
+                      // Ensure pasted value only keeps digits and does not exceed 10 chars
+                      const paste = e.clipboardData.getData('text') || '';
+                      const digits = paste.replace(/\D/g, '').slice(0, 10 - (formData.phone?.length || 0));
+                      if (digits.length === 0) {
+                        e.preventDefault();
+                        return;
+                      }
+                      e.preventDefault();
+                      const newVal = (formData.phone + digits).slice(0, 10);
+                      setFormData(prev => ({ ...prev, phone: newVal }));
+                      if (errors.phone) setErrors(prev => ({ ...prev, phone: '' }));
+                    }}
                     className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 bg-white/50 backdrop-blur-sm ${errors.phone ? 'border-red-500' : 'border-gray-300 group-hover:border-purple-300'
                       }`}
                     placeholder="เช่น 0812345678"

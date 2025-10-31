@@ -47,6 +47,7 @@ const chatRoutes = require('./routes/chatRoutes');
 const reputationRoutes = require('./routes/reputationRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const reportRoutes = require('./routes/reportRoutes');
+const testRoutes = require('./routes/testRoutes');
 
 
 const app = express();
@@ -75,6 +76,18 @@ app.use(helmet({
 app.use(compression());
 
 // Rate limiting
+// Skip rate limiting for local test runs when NODE_ENV !== 'production' and tests set the X-Test-Run header.
+const shouldSkipRateLimit = (req) => {
+  const env = process.env.NODE_ENV || 'development';
+  if (env === 'production') return false;
+  // Allow localhost IPs
+  const ip = (req.ip || '').toString();
+  if (ip === '::1' || ip === '127.0.0.1' || ip.startsWith('::ffff:127.0.0.1')) return true;
+  // Allow requests marked by test runner
+  if ((req.headers && (req.headers['x-test-run'] === '1' || req.headers['x-test-run'] === 'true'))) return true;
+  return false;
+};
+
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 1000, // limit each IP to 1000 requests per windowMs
@@ -84,6 +97,7 @@ const limiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  skip: shouldSkipRateLimit,
 });
 
 // Stricter rate limiting for auth routes
@@ -94,6 +108,7 @@ const authLimiter = rateLimit({
     success: false,
     message: 'Too many authentication attempts, please try again later.',
   },
+  skip: shouldSkipRateLimit,
 });
 
 // Stripe webhook MUST use raw body, register BEFORE json parser
@@ -175,6 +190,16 @@ app.use('/api', chatRoutes);
 app.use('/api', reputationRoutes);
 app.use('/api', notificationRoutes);
 app.use('/api', reportRoutes);
+
+// Mount dev-only test routes only in non-production environments
+if ((process.env.NODE_ENV || 'development') !== 'production') {
+  // Expose rateLimit stores to test controller via app.locals so it can attempt resets
+  app.locals.rateLimitStores = {
+    limiter: limiter.store,
+    authLimiter: authLimiter.store
+  };
+  app.use('/api/test', testRoutes);
+}
 
 
 // 404 handler

@@ -12,6 +12,7 @@ const { downloadImage, isGoogleProfilePicture, generateProfileFilename } = requi
 const { withPrismaRetry } = require('../utils/prismaRetry');
 
 // Lightweight in-memory throttle (best-effort)
+// Expose a small clear function so dev test endpoints can reset this state.
 const throttle = (() => {
   const hits = new Map();
   const windowMs = 60 * 1000; // 60s window
@@ -25,7 +26,10 @@ const throttle = (() => {
     hits.set(k, arr);
     return true;
   }
-  return { allow };
+  function clear() {
+    hits.clear();
+  }
+  return { allow, clear };
 })();
 
 // Small sanitizers
@@ -611,5 +615,7 @@ module.exports = {
   logout,
   checkEmail,
   forgotPassword,
-  resetPassword
+  resetPassword,
+  // Exported for test helpers to clear in-memory throttles
+  clearAuthThrottle: throttle.clear
 };

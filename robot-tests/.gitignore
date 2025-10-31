@@ -1,0 +1,35 @@
+# Robot Framework Results
+results/
+*.html
+*.xml
+log.html
+report.html
+output.xml
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test Data
+test_data/temp/
+*.tmp
+
+# Logs
+*.log

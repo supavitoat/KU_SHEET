@@ -404,9 +404,14 @@ const EditSheetPage = () => {
   }, [id, navigate, user?.role]);
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    
-    // ปัดเศษราคาเป็นจำนวนเต็ม
+    let { name, value } = e.target;
+
+    // For subject code: allow only digits
+    if (name === 'subjectCode') {
+      value = (value || '').toString().replace(/\D/g, '');
+    }
+
+    // Round price to integer if price field
     if (name === 'price' && value) {
       const roundedValue = Math.round(parseFloat(value) || 0);
       setFormData(prev => ({
@@ -860,7 +865,7 @@ const EditSheetPage = () => {
           <p className="text-gray-600 mb-6 animate-fadeInUp" style={{ animationDelay: '0.05s' }}>
             {isEditing ? 'แก้ไขข้อมูลชีทของคุณ' : 'อัปโหลดชีทสรุปของคุณและแบ่งปันความรู้กับชุมชนนักศึกษา'}
           </p>
-          <p className="text-red-600 font-semibold mb-6 text-lg animate-fadeInUp" style={{ animationDelay: '0.08s' }}>*ห้ามนำข้อสอบ รวมถึงเฉลยข้อสอบ มาแชร์ลงใน KU SHEET โดดด็ดขาด*</p>
+          <p className="text-red-600 font-semibold mb-6 text-lg animate-fadeInUp" style={{ animationDelay: '0.08s' }}>*ห้ามนำข้อสอบ รวมถึงเฉลยข้อสอบ มาแชร์ลงใน KU SHEET โดดเด็ดขาด*</p>
 
           {/* Gradient Divider */}
           <div className="flex justify-center mb-8 animate-fadeInUp" style={{ animationDelay: '0.2s' }}>
@@ -878,7 +883,7 @@ const EditSheetPage = () => {
               </div>
             </div>
           ) : (
-            <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/50 p-8 animate-fadeInUp" style={{ animationDelay: '0.25s' }}>
+            <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/50 p-8 pb-12 md:pb-16 animate-fadeInUp" style={{ animationDelay: '0.25s' }}>
             {/* ฟอร์มหลัก */}
             <form onSubmit={handleSubmit} className="space-y-10">
               {/* แสดง error message สำหรับ seller profile */}
@@ -917,7 +922,7 @@ const EditSheetPage = () => {
                     onChange={handleInputChange} 
                     className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 bg-white/50 backdrop-blur-sm ${errors.title ? 'border-red-500' : 'border-gray-300 group-hover:border-purple-300'} animate-fadeInUp`} 
                     style={{ animationDelay: '0.35s' }}
-                    placeholder="ใช่ชื่อชีทที่คุณอยากตั้งได้เลย เช่น สรุปทุกเรื่องก่อนสอบไฟนอล" 
+                    placeholder="ชื่อชีทที่คุณอยากตั้งได้เลย เช่น สรุปทุกเรื่องก่อนสอบไฟนอล" 
                   />
                   <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-purple-500/0 to-blue-500/0 group-hover:from-purple-500/5 group-hover:to-blue-500/5 transition-all duration-300 pointer-events-none"></div>
                 </div>
@@ -947,7 +952,22 @@ const EditSheetPage = () => {
                 <div className="group">
                   <label className="block text-sm font-medium text-gray-700 mb-2 group-hover:text-purple-600 transition-colors animate-fadeInUp" style={{ animationDelay: '0.75s' }}>รหัสวิชา <span className="text-red-500">*</span></label>
                   <div className="relative">
-                    <input type="text" name="subjectCode" value={formData.subjectCode} onChange={handleInputChange} className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 bg-white/50 backdrop-blur-sm ${errors.subjectCode ? 'border-red-500' : 'border-gray-300 group-hover:border-purple-300'} animate-fadeInUp`} style={{ animationDelay: '0.8s' }} placeholder="เช่น 01417111" />
+                    <input type="text" name="subjectCode" value={formData.subjectCode} onChange={handleInputChange} inputMode="numeric" pattern="[0-9]*" className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 bg-white/50 backdrop-blur-sm ${errors.subjectCode ? 'border-red-500' : 'border-gray-300 group-hover:border-purple-300'} animate-fadeInUp`} style={{ animationDelay: '0.8s' }} placeholder="เช่น 01417111" onPaste={(e) => {
+                      const paste = e.clipboardData.getData('text') || '';
+                      const digits = paste.replace(/\D/g, '');
+                      if (!digits) {
+                        e.preventDefault();
+                        return;
+                      }
+                      e.preventDefault();
+                      // Insert sanitized digits at current cursor position
+                      const input = e.target;
+                      const start = input.selectionStart || 0;
+                      const end = input.selectionEnd || 0;
+                      const current = input.value || '';
+                      const newVal = (current.slice(0, start) + digits + current.slice(end)).replace(/\D/g, '');
+                      setFormData(prev => ({ ...prev, subjectCode: newVal }));
+                    }} />
                     <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-purple-500/0 to-blue-500/0 group-hover:from-purple-500/5 group-hover:to-blue-500/5 transition-all duration-300 pointer-events-none"></div>
                   </div>
                   {errors.subjectCode && (<p className="mt-1 text-sm text-red-600 animate-pulse animate-fadeInUp" style={{ animationDelay: '0.85s' }}>{errors.subjectCode}</p>)}
@@ -1342,8 +1362,8 @@ const EditSheetPage = () => {
                 </div>
               </div>
               {/* ปุ่ม submit */}
-              <div className="pt-6">
-                <button type="submit" disabled={isLoading} className="w-full px-8 py-4 bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 text-white rounded-2xl hover:from-purple-700 hover:via-blue-700 hover:to-indigo-700 transition-all duration-300 font-bold text-lg shadow-xl hover:shadow-2xl hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 relative overflow-hidden group">
+              <div className="pt-6 mt-28 md:mt-36">
+                <button type="submit" disabled={isLoading} className="mt-12 md:mt-14 w-full px-8 py-4 bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 text-white rounded-2xl hover:from-purple-700 hover:via-blue-700 hover:to-indigo-700 transition-all duration-300 font-bold text-lg shadow-xl hover:shadow-2xl hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 relative overflow-hidden group">
                   <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
                   <span className="relative z-10 flex items-center justify-center">
                     {isLoading ? (
