@@ -53,6 +53,13 @@ const testRoutes = require('./routes/testRoutes');
 const app = express();
 const server = http.createServer(app);
 
+// When running behind a reverse proxy (Render, Heroku, Cloud Run, etc.)
+// Express needs to trust the proxy so that `req.ip` and X-Forwarded-* headers
+// are interpreted correctly. express-rate-limit validates X-Forwarded-For
+// and will throw if trust proxy is not enabled while the header is present.
+// Set to 1 to trust the first proxy hop (typical for managed platforms).
+app.set('trust proxy', 1);
+
 // Security middleware
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" },
