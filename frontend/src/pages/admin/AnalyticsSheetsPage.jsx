@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
-import { adminAPI } from '../../services/api';
 import {
   ArrowLeftIcon,
   ChartBarIcon,
@@ -58,8 +57,24 @@ const AnalyticsSheetsPage = () => {
   const fetchSheetsAnalytics = async () => {
     try {
       setLoading(true);
-      const res = await adminAPI.getSheetAnalytics();
-      const result = res.data;
+      
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:5000/api/admin/analytics/sheets', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      
+      const result = await response.json();
+      
       if (result.success) {
         setData(result.data);
       } else {
