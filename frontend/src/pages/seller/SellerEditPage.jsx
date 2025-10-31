@@ -115,6 +115,17 @@ const SellerEditPage = () => {
       value = (value || '').toString().replace(/\D/g, '');
       if (value.length > 10) value = value.slice(0, 10);
     }
+    // For bank account and PromptPay: allow only digits
+    if (name === 'bankAccount') {
+      value = (value || '').toString().replace(/\D/g, '');
+      // limit to 12 digits (common max length for bank accounts)
+      if (value.length > 12) value = value.slice(0, 12);
+    }
+    if (name === 'promptPayId') {
+      value = (value || '').toString().replace(/\D/g, '');
+      // PromptPay may be phone (10) or national id (13) — allow up to 13
+      if (value.length > 13) value = value.slice(0, 13);
+    }
     setFormData(prev => {
       const newData = { ...prev, [name]: value };
       return newData;
@@ -483,10 +494,25 @@ const SellerEditPage = () => {
                   </label>
                   <div className="relative">
                     <input
-                      type="text"
+                      type="tel"
                       name="bankAccount"
                       value={formData.bankAccount}
                       onChange={handleInputChange}
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={12}
+                      onPaste={(e) => {
+                        const paste = e.clipboardData.getData('text') || '';
+                        const digits = paste.replace(/\D/g, '').slice(0, 12 - (formData.bankAccount?.length || 0));
+                        if (digits.length === 0) {
+                          e.preventDefault();
+                          return;
+                        }
+                        e.preventDefault();
+                        const newVal = (formData.bankAccount + digits).slice(0, 12);
+                        setFormData(prev => ({ ...prev, bankAccount: newVal }));
+                        if (errors.bankAccount) setErrors(prev => ({ ...prev, bankAccount: '' }));
+                      }}
                       className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 bg-white/50 backdrop-blur-sm ${errors.bankAccount ? 'border-red-500' : 'border-gray-300 group-hover:border-purple-300'
                         }`}
                       placeholder="กรอกเลขบัญชีธนาคาร"
@@ -506,10 +532,25 @@ const SellerEditPage = () => {
                   </label>
                   <div className="relative">
                     <input
-                      type="text"
+                      type="tel"
                       name="promptPayId"
                       value={formData.promptPayId}
                       onChange={handleInputChange}
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={13}
+                      onPaste={(e) => {
+                        const paste = e.clipboardData.getData('text') || '';
+                        const digits = paste.replace(/\D/g, '').slice(0, 13 - (formData.promptPayId?.length || 0));
+                        if (digits.length === 0) {
+                          e.preventDefault();
+                          return;
+                        }
+                        e.preventDefault();
+                        const newVal = (formData.promptPayId + digits).slice(0, 13);
+                        setFormData(prev => ({ ...prev, promptPayId: newVal }));
+                        if (errors.promptPayId) setErrors(prev => ({ ...prev, promptPayId: '' }));
+                      }}
                       className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 bg-white/50 backdrop-blur-sm ${errors.promptPayId ? 'border-red-500' : 'border-gray-300 group-hover:border-purple-300'
                         }`}
                       placeholder="เบอร์โทร หรือ เลขบัตรประชาชน"
