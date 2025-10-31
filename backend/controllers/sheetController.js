@@ -38,17 +38,9 @@ const getSheets = async (req, res) => {
     const mappedSort = sortFieldMap[sort] || sort;
     const orderDir = order.toLowerCase()==='desc'?'desc':'asc';
 
-    // Build include object dynamically to avoid passing `false` which Prisma may reject
-    const includeObj = {
-      seller: { select: { penName: true, user: { select: { fullName: true, picture: true } } } }
-    };
-    if (req.user) {
-      includeObj.orders = { where: { userId: req.user.id, status: 'VERIFIED' }, select: { id: true }, take: 1 };
-    }
-
     const [count, rows] = await Promise.all([
-      withPrismaRetry(() => prisma.sheet.count({ where: whereClause })),
-      withPrismaRetry(() => prisma.sheet.findMany({ where: whereClause, include: includeObj, skip, take: limit, orderBy: { [mappedSort]: orderDir } }))
+      withPrismaRetry(()=> prisma.sheet.count({ where: whereClause })),
+      withPrismaRetry(()=> prisma.sheet.findMany({ where: whereClause, include:{ seller:{ select:{ penName:true, user:{ select:{ fullName:true, picture:true } } } }, orders: req.user ? { where:{ userId:req.user.id, status:'VERIFIED' }, select:{ id:true }, take:1 } : false }, skip, take: limit, orderBy:{ [mappedSort]: orderDir } }))
     ]);
 
     const sheetIds = rows.map(s=>s.id);

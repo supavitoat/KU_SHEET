@@ -9,6 +9,7 @@ import closeEyeIcon from '../../assets/CloseEye.png';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { CoolMode } from "@/components/magicui/cool-mode";
 import { clearTempRegistration } from '../../utils/localStorage';
+import { getBaseURL } from '../../services/api';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -110,7 +111,8 @@ const LoginPage = () => {
   // Google OAuth response handler (placed before initializeGoogleSDK to avoid TDZ)
   const handleGoogleResponse = React.useCallback(async (response) => {
     try {
-      const res = await fetch('/api/auth/google/callback', {
+      const callbackUrl = `${getBaseURL()}/api/auth/google/callback`;
+      const res = await fetch(callbackUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ credential: response.credential }),
