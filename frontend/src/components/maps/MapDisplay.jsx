@@ -9,7 +9,10 @@ const MapDisplay = ({
   showDirections = true,
   showMarkers = true
 }) => {
-  const hasCoordinates = location && location.lat && location.lng;
+  // Normalize coordinates: backend may store lat/lng as strings. Convert to numbers when possible.
+  const latNum = location && location.lat !== undefined && location.lat !== null && location.lat !== '' ? Number(location.lat) : NaN;
+  const lngNum = location && location.lng !== undefined && location.lng !== null && location.lng !== '' ? Number(location.lng) : NaN;
+  const hasCoordinates = Number.isFinite(latNum) && Number.isFinite(lngNum);
   
   if (!location) {
     return (
@@ -54,13 +57,13 @@ const MapDisplay = ({
 
       {/* Map */}
       <div className="p-6">
-        {hasCoordinates ? (
+          {hasCoordinates ? (
           <GoogleMap
-            center={{ lat: location.lat, lng: location.lng }}
+            center={{ lat: latNum, lng: lngNum }}
             zoom={16}
             markers={showMarkers ? [{
-              lat: location.lat,
-              lng: location.lng,
+              lat: latNum,
+              lng: lngNum,
               title: location.name || 'สถานที่จัดกิจกรรม'
             }] : []}
             height="300px"
@@ -92,8 +95,8 @@ const MapDisplay = ({
           )}
           {hasCoordinates && (
             <div className="flex gap-4 text-xs text-gray-500">
-              <span>ละติจูด: {location.lat.toFixed(6)}</span>
-              <span>ลองจิจูด: {location.lng.toFixed(6)}</span>
+              <span>ละติจูด: {latNum.toFixed(6)}</span>
+              <span>ลองจิจูด: {lngNum.toFixed(6)}</span>
             </div>
           )}
         </div>
