@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { sellerAPI, adminAPI } from '../../services/api';
+import { sellerAPI, adminAPI, getBaseURL } from '../../services/api';
 import { facultiesList, majorsList } from '../../constants/academics';
 import {
   DocumentTextIcon,
@@ -14,8 +14,8 @@ import toast from 'react-hot-toast';
 
 // ฟังก์ชันช่วยตัด /api ออกจาก VITE_API_URL
 function getStaticUrl(path) {
-  const base = import.meta.env.VITE_API_URL?.replace(/\/api$/, '') || 'http://localhost:5000';
-  return `${base}${path}`;
+  const base = getBaseURL() || (typeof window !== 'undefined' ? window.location.origin.replace(/\/+$/,'') : '');
+  return `${base}${path}`.replace(/([^:]\/)(\/)+/g, '$1/');
 }
 
 const EditSheetPage = () => {

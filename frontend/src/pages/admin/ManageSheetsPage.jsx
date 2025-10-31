@@ -12,7 +12,7 @@ import {
   StarIcon,
   ArrowDownTrayIcon
 } from '@heroicons/react/24/outline';
-import { adminAPI, getProfilePictureURL } from '../../services/api';
+import { adminAPI, getProfilePictureURL, getBaseURL } from '../../services/api';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { createPortal } from 'react-dom';
 import toast from 'react-hot-toast';
@@ -315,7 +315,7 @@ const ManageSheetsPage = () => {
                     <td className="px-3 py-3">
                       <div className="flex items-center justify-end gap-1">
                         <button
-                          onClick={() => window.open(`http://localhost:5173/admin/infoSheet/${sheet.id}`, '_blank')}
+                          onClick={() => window.open(`${getBaseURL()}/admin/infoSheet/${sheet.id}`, '_blank')}
                           className="p-1.5 text-blue-600 hover:bg-blue-100 rounded transition-colors"
                           title="ดูรายละเอียด"
                         >

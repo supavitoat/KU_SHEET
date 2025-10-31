@@ -4,7 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
 
-import { sheetsAPI, getProfilePictureURL, reviewsAPI } from '../../services/api';
+import { sheetsAPI, getProfilePictureURL, reviewsAPI, getBaseURL } from '../../services/api';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ProductCard from '../../components/common/ProductCard';
 import { 
@@ -375,7 +375,7 @@ const SheetDetailPage = () => {
                       return Array.isArray(images) ? images.map((image, index) => (
                         <div key={index} className="bg-gray-50 rounded-lg overflow-hidden">
                           <img
-                            src={`${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000'}/uploads/previews/${image}`}
+                            src={`${getBaseURL()}/uploads/previews/${image}`}
                             alt={`Preview ${index + 1}`}
                             className="w-full h-auto object-contain max-h-[400px]"
                           />

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { ChevronDownIcon } from "@heroicons/react/24/outline";
 import { CoolMode } from "@/components/magicui/cool-mode";
+import { getBaseURL } from '../../services/api';
 import toast from 'react-hot-toast';
 import { clearTempRegistration } from "../../utils/localStorage";
 import { facultiesList, majorsList } from "../../constants/academics";
@@ -190,8 +191,8 @@ const InfoEnterPage = () => {
         // Google first login: สร้าง user จริง
         try {
           sessionStorage.setItem('showLoginToast', '1');
-          
-          const res = await fetch('http://localhost:5000/api/auth/google/register', {
+          const registerUrl = `${getBaseURL()}/api/auth/google/register`;
+          const res = await fetch(registerUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

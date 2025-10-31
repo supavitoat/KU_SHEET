@@ -2,8 +2,9 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 
 // Create axios instance
+const resolvedApiBase = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' ? `${window.location.origin}/api` : '/api');
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5001/api',
+  baseURL: resolvedApiBase,
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
@@ -11,10 +12,10 @@ const api = axios.create({
 });
 
 // Helper function to get the correct base URL for static files
-const getBaseURL = () => {
-  const apiURL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
-  // Remove /api from the end if it exists
-  return apiURL.replace(/\/api$/, '');
+export const getBaseURL = () => {
+  const apiURL = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' ? window.location.origin : '');
+  // Remove trailing /api if present
+  return apiURL.replace(/\/api$/, '').replace(/\/+$/,'');
 };
 
 // Helper function to get full URL for profile pictures

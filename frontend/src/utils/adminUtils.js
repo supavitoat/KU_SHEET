@@ -1,5 +1,6 @@
 // Utility functions for Admin Panel
 import LoadingSpinner from '../components/common/LoadingSpinner';
+import { getProfilePictureURL as serviceGetProfilePictureURL } from '../services/api';
 
 // Format currency to Thai Baht
 export const formatCurrency = (amount) => {
@@ -111,20 +112,12 @@ export const formatNumber = (number) => {
 
 // Get profile picture URL with fallback
 export const getProfilePictureURL = (picture) => {
-  if (!picture) return null;
-  
-  // If it's already a full URL, return as is
-  if (picture.startsWith('http://') || picture.startsWith('https://')) {
-    return picture;
+  try {
+    return serviceGetProfilePictureURL(picture);
+  } catch (e) {
+    console.warn('adminUtils.getProfilePictureURL fallback error:', e);
+    return null;
   }
-  
-  // If it's a data URL, return as is
-  if (picture.startsWith('data:')) {
-    return picture;
-  }
-  
-  // If it's a relative path, prepend the backend URL
-  return `http://localhost:5000${picture.startsWith('/') ? '' : '/'}${picture}`;
 };
 
 // Export LoadingSpinner component

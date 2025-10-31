@@ -137,8 +137,8 @@ const HomePage = () => {
 
   const loadStats = async () => {
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/metadata/stats`);
-      if (response.data.success) {
+      const response = await sheetsAPI.getStats();
+      if (response.data?.success) {
         setStats({
           totalSheets: response.data.data.totalSheets || 0,
           totalUsers: response.data.data.totalUsers || 0

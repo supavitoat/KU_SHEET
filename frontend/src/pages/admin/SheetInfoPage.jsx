@@ -12,7 +12,7 @@ import {
   XMarkIcon,
   ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
-import { adminAPI, getProfilePictureURL } from '../../services/api';
+import { adminAPI, getProfilePictureURL, getBaseURL } from '../../services/api';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ReasonModal from '../../components/common/ReasonModal';
 import toast from 'react-hot-toast';
@@ -107,8 +107,8 @@ const SheetInfoPage = () => {
     }
 
     try {
-      // สร้าง URL สำหรับดาวน์โหลด
-      const downloadUrl = `http://localhost:5000/uploads/sheets/${encodeURIComponent(sheet.pdfFile)}`;
+  // สร้าง URL สำหรับดาวน์โหลด
+  const downloadUrl = `${getBaseURL()}/uploads/sheets/${encodeURIComponent(sheet.pdfFile)}`;
       
       // สร้าง link element และคลิกเพื่อดาวน์โหลด
       const link = document.createElement('a');
@@ -405,7 +405,7 @@ const SheetInfoPage = () => {
                     return (
                       <div className="space-y-6">
                         {previewImages.map((image, index) => {
-                          const imageUrl = `http://localhost:5000/uploads/previews/${encodeURIComponent(image)}`;
+                          const imageUrl = `${getBaseURL()}/uploads/previews/${encodeURIComponent(image)}`;
                           
                           return (
                             <div key={index} className="bg-gray-50 rounded-lg overflow-hidden">

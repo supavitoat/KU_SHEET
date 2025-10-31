@@ -1,4 +1,5 @@
 import React from 'react';
+import { getBaseURL } from '../../services/api';
 import { XMarkIcon, CheckIcon } from '@heroicons/react/24/outline';
 
 const SlipViewModal = ({ isOpen, onClose, slipData, onConfirm }) => {
@@ -76,7 +77,7 @@ const SlipViewModal = ({ isOpen, onClose, slipData, onConfirm }) => {
             <div className="border border-gray-200 rounded-lg overflow-hidden bg-gray-50">
               {slipData?.slipImagePath ? (
                 <img
-                  src={`${(import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/api$/, '')}/uploads/slips/${slipData.slipImagePath}`}
+                  src={`${getBaseURL()}/uploads/slips/${slipData.slipImagePath}`}
                   alt="สลิปการโอนเงิน"
                   className="w-full h-auto max-h-96 object-contain"
                   onError={(e) => {

@@ -1,11 +1,12 @@
 import { io } from 'socket.io-client';
+import { getBaseURL } from '../services/api';
 
 let socket;
 let currentToken;
 
 export function getSocket() {
-  const base = (import.meta.env.VITE_API_URL || 'http://localhost:5001/api').replace(/\/$/, '');
-  const baseHttp = base.replace(/\/api$/, '');
+  const apiBase = getBaseURL();
+  const baseHttp = apiBase.replace(/\/api$/, '');
   const latest = localStorage.getItem('token') || undefined;
 
   if (!socket) {

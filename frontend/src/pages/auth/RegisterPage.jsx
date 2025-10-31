@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
-import { authAPI } from '../../services/api';
+import { authAPI, getBaseURL } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import groupImage from '../../assets/Group.png';
 import mailIcon from '../../assets/mail.png';
@@ -129,7 +129,8 @@ const RegisterPage = () => {
   const { getCurrentUser } = useAuth();
   const handleGoogleResponse = useCallback(async (response) => {
     try {
-      const res = await fetch('http://localhost:5000/api/auth/google/callback', {
+      const callbackUrl = `${getBaseURL()}/api/auth/google/callback`;
+      const res = await fetch(callbackUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ credential: response.credential }),

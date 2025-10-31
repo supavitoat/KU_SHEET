@@ -178,7 +178,14 @@ app.get('/api/ready', async (req, res) => {
 // Root route: redirect to frontend if FRONTEND_URL is set, otherwise show a small info message
 app.get('/', (req, res) => {
   const fe = process.env.FRONTEND_URL;
-  if (fe) return res.redirect(fe);
+  // Avoid redirecting to localhost during production if FRONTEND_URL wasn't updated
+  if (fe && !fe.includes('localhost')) return res.redirect(fe);
+
+  // Fallback to first CORS origin if available and not localhost
+  const corsList = (process.env.CORS_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean);
+  if (corsList.length && !corsList[0].includes('localhost')) return res.redirect(corsList[0]);
+
+  // Otherwise show a simple informational message instead of redirecting to localhost
   res.type('text').send('KU Sheet API - visit /api/health for status');
 });
 

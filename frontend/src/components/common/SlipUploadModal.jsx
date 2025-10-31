@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { getBaseURL } from '../../services/api';
 import { XMarkIcon, DocumentArrowUpIcon, PhotoIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import { adminAPI } from '../../services/api';
@@ -12,8 +13,7 @@ const SlipUploadModal = ({ isOpen, onClose, payoutData, onSlipUploaded }) => {
   React.useEffect(() => {
     if (!isOpen) return;
     if (payoutData?.slipImagePath) {
-      const base = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/api$/, '');
-      setPreviewUrl(`${base}/uploads/slips/${payoutData.slipImagePath}`);
+      setPreviewUrl(`${getBaseURL()}/uploads/slips/${payoutData.slipImagePath}`);
       setSelectedFile(null);
     } else {
       setPreviewUrl(null);
