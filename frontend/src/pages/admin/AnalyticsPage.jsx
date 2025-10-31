@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
+import { adminAPI } from '../../services/api';
 import {
   ArrowLeftIcon,
   ChartBarIcon,
@@ -62,52 +63,16 @@ const AnalyticsPage = () => {
   const fetchUserAnalytics = async () => {
     try {
       setLoading(true);
-      
-      const token = localStorage.getItem('token');
-
-      
-      const response = await fetch('http://localhost:5000/api/admin/analytics/users', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        credentials: 'include'
-      });
-      
-      // Check if response is actually JSON
-      const contentType = response.headers.get('content-type');
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        
-        // Check if it's HTML (common when getting 404 or redirect)
-        if (errorText.includes('<!DOCTYPE') || errorText.includes('<html>')) {
-          throw new Error(`Server returned HTML instead of JSON. Status: ${response.status}. This usually means the API endpoint was not found or there was a redirect.`);
-        }
-        
-        throw new Error(`HTTP ${response.status}: ${errorText}`);
-      }
-      
-      // Ensure response is JSON
-      if (!contentType || !contentType.includes('application/json')) {
-        const textResponse = await response.text();
-        throw new Error(`Expected JSON response but got: ${contentType}. Response preview: ${textResponse.substring(0, 100)}`);
-      }
-      
-      const result = await response.json();
-      
-      if (result.success) {
-        setData(result.data);
+      const response = await adminAPI.getUserAnalytics();
+      if (response?.data?.success) {
+        setData(response.data.data);
       } else {
-        console.error('❌ API returned error:', result);
-        throw new Error(result.message || 'Failed to fetch data');
+        throw new Error(response?.data?.message || 'Failed to fetch data');
       }
     } catch (err) {
       console.error('❌ Error fetching user analytics:', err);
-      setError(err.message);
-        } finally {
+      setError(err?.message || 'Failed to fetch user analytics');
+    } finally {
       setLoading(false);
     }
   };
@@ -115,50 +80,15 @@ const AnalyticsPage = () => {
   const fetchSheetAnalytics = async () => {
     try {
       setLoading(true);
-      
-      const token = localStorage.getItem('token');
-
-      
-      const response = await fetch('http://localhost:5000/api/admin/analytics/sheets', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        credentials: 'include'
-      });
-      
-      // Check if response is actually JSON
-      const contentType = response.headers.get('content-type');
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        
-        // Check if it's HTML (common when getting 404 or redirect)
-        if (errorText.includes('<!DOCTYPE') || errorText.includes('<html>')) {
-          throw new Error(`Server returned HTML instead of JSON. Status: ${response.status}. This usually means the API endpoint was not found or there was a redirect.`);
-        }
-        
-        throw new Error(`HTTP ${response.status}: ${errorText}`);
-      }
-      
-      // Ensure response is JSON
-      if (!contentType || !contentType.includes('application/json')) {
-        const textResponse = await response.text();
-        throw new Error(`Expected JSON response but got: ${contentType}. Response preview: ${textResponse.substring(0, 100)}`);
-      }
-      
-      const result = await response.json();
-      
-      if (result.success) {
-        setData(result.data);
+      const response = await adminAPI.getSheetAnalytics();
+      if (response?.data?.success) {
+        setData(response.data.data);
       } else {
-        throw new Error(result.message || 'Failed to fetch data');
+        throw new Error(response?.data?.message || 'Failed to fetch sheet analytics');
       }
     } catch (err) {
-      setError(err.message);
       console.error('Error fetching sheet analytics:', err);
+      setError(err?.message || 'Failed to fetch sheet analytics');
     } finally {
       setLoading(false);
     }
@@ -167,50 +97,15 @@ const AnalyticsPage = () => {
   const fetchOrderAnalytics = async () => {
     try {
       setLoading(true);
-      
-      const token = localStorage.getItem('token');
-
-      
-      const response = await fetch('http://localhost:5000/api/admin/analytics/orders', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        credentials: 'include'
-      });
-      
-      // Check if response is actually JSON
-      const contentType = response.headers.get('content-type');
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        
-        // Check if it's HTML (common when getting 404 or redirect)
-        if (errorText.includes('<!DOCTYPE') || errorText.includes('<html>')) {
-          throw new Error(`Server returned HTML instead of JSON. Status: ${response.status}. This usually means the API endpoint was not found or there was a redirect.`);
-        }
-        
-        throw new Error(`HTTP ${response.status}: ${errorText}`);
-      }
-      
-      // Ensure response is JSON
-      if (!contentType || !contentType.includes('application/json')) {
-        const textResponse = await response.text();
-        throw new Error(`Expected JSON response but got: ${contentType}. Response preview: ${textResponse.substring(0, 100)}`);
-      }
-      
-      const result = await response.json();
-      
-      if (result.success) {
-        setData(result.data);
+      const response = await adminAPI.getOrderAnalytics();
+      if (response?.data?.success) {
+        setData(response.data.data);
       } else {
-        throw new Error(result.message || 'Failed to fetch data');
+        throw new Error(response?.data?.message || 'Failed to fetch order analytics');
       }
     } catch (err) {
-      setError(err.message);
       console.error('Error fetching order analytics:', err);
+      setError(err?.message || 'Failed to fetch order analytics');
     } finally {
       setLoading(false);
     }
@@ -219,50 +114,15 @@ const AnalyticsPage = () => {
   const fetchRevenueAnalytics = async () => {
     try {
       setLoading(true);
-      
-      const token = localStorage.getItem('token');
-
-      
-      const response = await fetch('http://localhost:5000/api/admin/analytics/revenue', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        credentials: 'include'
-      });
-      
-      // Check if response is actually JSON
-      const contentType = response.headers.get('content-type');
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        
-        // Check if it's HTML (common when getting 404 or redirect)
-        if (errorText.includes('<!DOCTYPE') || errorText.includes('<html>')) {
-          throw new Error(`Server returned HTML instead of JSON. Status: ${response.status}. This usually means the API endpoint was not found or there was a redirect.`);
-        }
-        
-        throw new Error(`HTTP ${response.status}: ${errorText}`);
-      }
-      
-      // Ensure response is JSON
-      if (!contentType || !contentType.includes('application/json')) {
-        const textResponse = await response.text();
-        throw new Error(`Expected JSON response but got: ${contentType}. Response preview: ${textResponse.substring(0, 100)}`);
-      }
-      
-      const result = await response.json();
-      
-      if (result.success) {
-        setData(result.data);
+      const response = await adminAPI.getRevenueAnalytics();
+      if (response?.data?.success) {
+        setData(response.data.data);
       } else {
-        throw new Error(result.message || 'Failed to fetch data');
+        throw new Error(response?.data?.message || 'Failed to fetch revenue analytics');
       }
     } catch (err) {
-      setError(err.message);
       console.error('Error fetching revenue analytics:', err);
+      setError(err?.message || 'Failed to fetch revenue analytics');
     } finally {
       setLoading(false);
     }
