@@ -175,6 +175,13 @@ app.get('/api/ready', async (req, res) => {
   }
 });
 
+// Root route: redirect to frontend if FRONTEND_URL is set, otherwise show a small info message
+app.get('/', (req, res) => {
+  const fe = process.env.FRONTEND_URL;
+  if (fe) return res.redirect(fe);
+  res.type('text').send('KU Sheet API - visit /api/health for status');
+});
+
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/sheets', sheetRoutes);
