@@ -35,7 +35,22 @@ async function createGroup(req, res) { try {
   const organizerId = req.user.id;
   const { title, description, locationName, address, latitude, longitude, startAt, endAt, capacity = 10, joinPolicy = 'auto' } = req.body;
   if (!title || !startAt || !endAt) return res.status(400).json({ success: false, message: 'Missing required fields' });
-  const data = { title, description: description || null, organizerId, locationName: locationName || null, address: address || null, latitude: latitude !== undefined ? Number(latitude) : null, longitude: longitude !== undefined ? Number(longitude) : null, startAt: new Date(startAt), endAt: new Date(endAt), capacity: Number(capacity), joinPolicy, status: 'upcoming' };
+  // Prisma schema expects latitude/longitude as String (nullable).
+  // Coerce values to string or store null for empty/undefined inputs.
+  const data = {
+    title,
+    description: description || null,
+    organizerId,
+    locationName: locationName || null,
+    address: address || null,
+    latitude: latitude !== undefined && latitude !== null && latitude !== '' ? String(latitude) : null,
+    longitude: longitude !== undefined && longitude !== null && longitude !== '' ? String(longitude) : null,
+    startAt: new Date(startAt),
+    endAt: new Date(endAt),
+    capacity: Number(capacity),
+    joinPolicy,
+    status: 'upcoming'
+  };
   const created = await withPrismaRetry(() => prisma.$transaction(async (tx) => { const group = await tx.group.create({ data }); await tx.groupMember.create({ data: { groupId: group.id, userId: organizerId, role: 'organizer', status: 'approved' } }); return group; }));
   res.status(201).json({ success: true, data: created });
 } catch (error) { console.error('createGroup error', { message: error.message, stack: error.stack }); res.status(500).json({ success: false, message: 'Server error' }); } }
@@ -152,7 +167,9 @@ async function startGroup(req, res) { try {
   const updated = await withPrismaRetry(() => prisma.$transaction(async (tx) => { const g = await tx.group.update({ where: { id: groupId }, data: { status: 'ongoing' } }); const organizerMember = await tx.groupMember.findUnique({ where: { groupId_userId: { groupId, userId } } }); if (organizerMember && !organizerMember.checkedInAt) { await tx.groupMember.update({ where: { id: organizerMember.id }, data: { status: 'checked_in', checkedInAt: new Date() } }); } return g; }));
   try {
     const members = await withPrismaRetry(() => prisma.groupMember.findMany({ where: { groupId, status: 'approved' }, select: { userId: true } }));
-    await Promise.all(members.map(m => createAndEmitNotification({ userId: m.userId, type: 'system', title: 'กิจกรรมเริ่มแล้ว', body: group.title || undefined, link: `/groups/${groupId}`, data: { groupId } })));
+   if (address !== undefined) data.address = address || null;
+   if (latitude !== undefined) data.latitude = latitude !== null && latitude !== '' ? String(latitude) : null;
+   if (longitude !== undefined) data.longitude = longitude !== null && longitude !== '' ? String(longitude) : null;
   } catch {}
   res.json({ success: true, data: updated });
 } catch (error) { console.error('startGroup error', { message: error.message, stack: error.stack }); res.status(500).json({ success: false, message: 'Server error' }); } }
