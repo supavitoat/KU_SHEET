@@ -21,6 +21,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 import toast from 'react-hot-toast';
+import { adminAPI } from '../../services/api';
 
 const OrdersPage = () => {
   const navigate = useNavigate();
@@ -36,29 +37,27 @@ const OrdersPage = () => {
   const fetchOrders = useCallback(async () => {
     try {
       setLoading(true);
-      
-      const response = await fetch(`/api/admin/orders?page=${currentPage}&limit=20&search=${searchTerm}&status=${statusFilter}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success) {
-          setOrders(result.data.orders);
-          setTotalPages(result.data.pagination.totalPages);
-          setTotalOrders(result.data.pagination.totalCount);
-          } else {
-          throw new Error(result.message || 'Failed to load orders');
-        }
+      const params = {
+        page: currentPage,
+        limit: 20,
+        search: searchTerm,
+        status: statusFilter
+      };
+
+      const response = await adminAPI.getOrders(params);
+
+      if (response?.data?.success) {
+        const result = response.data.data;
+        setOrders(result.orders || []);
+        setTotalPages(result.pagination?.totalPages || 1);
+        setTotalOrders(result.pagination?.totalCount || 0);
       } else {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        throw new Error(response?.data?.message || 'Failed to load orders');
       }
     } catch (error) {
       console.error('❌ Error fetching orders:', error);
       toast.error('ไม่สามารถโหลดข้อมูลคำสั่งซื้อได้');
-      
+
       // Fallback to empty array if API fails
       setOrders([]);
       setTotalPages(1);
@@ -90,26 +89,13 @@ const OrdersPage = () => {
 
   const handleStatusChange = async (orderId, newStatus) => {
     try {
-      const response = await fetch(`/api/admin/orders/${orderId}/status`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ status: newStatus })
-      });
-      
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success) {
-          toast.success('อัปเดตสถานะคำสั่งซื้อสำเร็จ');
-          // รีเฟรชข้อมูล
-          fetchOrders();
-        } else {
-          throw new Error(result.message || 'API response error');
-        }
+      const response = await adminAPI.updateOrderStatus(orderId, newStatus);
+      if (response?.data?.success) {
+        toast.success('อัปเดตสถานะคำสั่งซื้อสำเร็จ');
+        // รีเฟรชข้อมูล
+        fetchOrders();
       } else {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        throw new Error(response?.data?.message || 'API response error');
       }
     } catch (error) {
       console.error('❌ Error updating order status:', error);
