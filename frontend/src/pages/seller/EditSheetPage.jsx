@@ -538,6 +538,9 @@ const EditSheetPage = () => {
       if (!bankInfo.bankAccount || !bankInfo.bankAccount.trim()) {
         newErrors.bankAccount = 'กรุณากรอกเลขบัญชีธนาคาร';
       }
+      if (!bankInfo.promptPayId || !bankInfo.promptPayId.trim()) {
+        newErrors.promptPayId = 'กรุณากรอกหมายเลข PromptPay';
+      }
       
       // ตรวจสอบว่าข้อมูลธนาคารครบถ้วนหรือไม่
       if (!bankInfo.accountName?.trim() || !bankInfo.bankName?.trim() || !bankInfo.bankAccount?.trim()) {
@@ -562,6 +565,9 @@ const EditSheetPage = () => {
       if (formData.price && Number(formData.price) > 0) {
         if (!bankInfo.bankName || !bankInfo.bankAccount || !bankInfo.accountName) {
           newErrors.bankInfo = 'กรุณากรอกข้อมูลธนาคารให้ครบถ้วน';
+        }
+        if (!bankInfo.promptPayId || !bankInfo.promptPayId.trim()) {
+          newErrors.promptPayId = 'กรุณากรอกหมายเลข PromptPay';
         }
       }
     }
@@ -1215,22 +1221,40 @@ const EditSheetPage = () => {
                     <div className="group">
                       <label className="block text-sm font-medium text-gray-700 mb-2 group-hover:text-purple-600 transition-colors">เลขบัญชีธนาคาร <span className="text-red-500">*</span></label>
                       <div className="relative">
-                        <input 
-                          type="text" 
-                          className="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 bg-white/50 backdrop-blur-sm group-hover:border-purple-300" 
-                          value={bankInfo.bankAccount} 
-                          onChange={e => {
-                            const newValue = e.target.value;
-                            setBankInfo({ ...bankInfo, bankAccount: newValue });
-                            // อัพเดทสถานะเมื่อมีการเปลี่ยนแปลง
-                            if (newValue.trim() && bankInfo.accountName.trim() && bankInfo.bankName.trim()) {
-                              setBankInfoStatus('complete');
-                            } else {
-                              setBankInfoStatus('incomplete');
-                            }
-                          }} 
-                          placeholder="กรอกเลขบัญชีธนาคาร" 
-                        />
+                          <input 
+                            type="text" 
+                            inputMode="numeric" 
+                            pattern="[0-9]*" 
+                            className="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 bg-white/50 backdrop-blur-sm group-hover:border-purple-300" 
+                            value={bankInfo.bankAccount} 
+                            onChange={e => {
+                              // allow only digits
+                              const digits = (e.target.value || '').toString().replace(/\D/g, '');
+                              setBankInfo({ ...bankInfo, bankAccount: digits });
+                              // อัพเดทสถานะเมื่อมีการเปลี่ยนแปลง
+                              if (digits.trim() && bankInfo.accountName.trim() && bankInfo.bankName.trim()) {
+                                setBankInfoStatus('complete');
+                              } else {
+                                setBankInfoStatus('incomplete');
+                              }
+                            }} 
+                            onPaste={(e) => {
+                              const paste = e.clipboardData.getData('text') || '';
+                              const digits = paste.replace(/\D/g, '');
+                              if (!digits) {
+                                e.preventDefault();
+                                return;
+                              }
+                              e.preventDefault();
+                              const input = e.target;
+                              const start = input.selectionStart || 0;
+                              const end = input.selectionEnd || 0;
+                              const current = input.value || '';
+                              const newVal = (current.slice(0, start) + digits + current.slice(end)).replace(/\D/g, '');
+                              setBankInfo(prev => ({ ...prev, bankAccount: newVal }));
+                            }}
+                            placeholder="กรอกเลขบัญชีธนาคาร (เฉพาะตัวเลข)" 
+                          />
                         <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-purple-500/0 to-blue-500/0 group-hover:from-purple-500/5 group-hover:to-blue-500/5 transition-all duration-300 pointer-events-none"></div>
                       </div>
                       {errors.bankAccount && <p className="mt-1 text-sm text-red-600 animate-pulse">{errors.bankAccount}</p>}
@@ -1240,16 +1264,37 @@ const EditSheetPage = () => {
                       <div className="relative">
                         <input 
                           type="text" 
+                          inputMode="numeric" 
+                          pattern="[0-9]*" 
+                          maxLength={13}
                           className="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 bg-white/50 backdrop-blur-sm group-hover:border-purple-300" 
                           value={bankInfo.promptPayId || ''} 
                           onChange={e => {
-                            const newValue = e.target.value;
-                            setBankInfo({ ...bankInfo, promptPayId: newValue });
+                            // allow only digits for PromptPay id and limit to 13
+                            const digits = (e.target.value || '').toString().replace(/\D/g, '').slice(0, 13);
+                            setBankInfo({ ...bankInfo, promptPayId: digits });
                           }} 
-                          placeholder="เบอร์โทร, เลขบัตรประชาชน, หรือเลขบัญชี" 
+                          onPaste={(e) => {
+                            const paste = e.clipboardData.getData('text') || '';
+                            const digits = paste.replace(/\D/g, '');
+                            if (!digits) {
+                              e.preventDefault();
+                              return;
+                            }
+                            e.preventDefault();
+                            const input = e.target;
+                            const start = input.selectionStart || 0;
+                            const end = input.selectionEnd || 0;
+                            const current = input.value || '';
+                            // combine and then slice to max 13
+                            const combined = (current.slice(0, start) + digits + current.slice(end)).replace(/\D/g, '').slice(0, 13);
+                            setBankInfo(prev => ({ ...prev, promptPayId: combined }));
+                          }}
+                          placeholder="หมายเลข PromptPay (ไม่เกิน 13 ตัวเลข)" 
                         />
                         <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-purple-500/0 to-blue-500/0 group-hover:from-purple-500/5 group-hover:to-blue-500/5 transition-all duration-300 pointer-events-none"></div>
                       </div>
+                      {errors.promptPayId && <p className="mt-1 text-sm text-red-600 animate-pulse">{errors.promptPayId}</p>}
                     </div>
                   </div>
                 </div>
