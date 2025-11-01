@@ -5,6 +5,7 @@ const helmet = require('helmet');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
+const fs = require('fs');
 // const fileUpload = require('express-fileupload'); // ปิดการใช้งาน เพราะใช้ multer แล้ว
 require('dotenv').config();
 // Inline environment validation (moved from envCheck.js)
@@ -224,6 +225,24 @@ if ((process.env.NODE_ENV || 'development') !== 'production') {
 
 
 // 404 handler
+// If a frontend build exists (frontend/dist), serve it as static files
+// and fall back to index.html for non-API routes so SPA client-side
+// routing works when users open deep links (e.g. /admin/infoSheet/10).
+try {
+  const frontendDist = path.join(__dirname, '..', 'frontend', 'dist');
+  if (fs.existsSync(frontendDist)) {
+    app.use(express.static(frontendDist));
+
+    app.get('*', (req, res, next) => {
+      // Skip API and upload routes so they continue to the API handlers
+      if (req.originalUrl.startsWith('/api') || req.originalUrl.startsWith('/uploads')) return next();
+      res.sendFile(path.join(frontendDist, 'index.html'));
+    });
+  }
+} catch (e) {
+  console.warn('Could not enable frontend static serving fallback:', e.message);
+}
+
 app.use('/api/*', (req, res) => {
   res.status(404).json({
     success: false,
