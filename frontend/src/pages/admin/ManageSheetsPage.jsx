@@ -315,7 +315,7 @@ const ManageSheetsPage = () => {
                     <td className="px-3 py-3">
                       <div className="flex items-center justify-end gap-1">
                         <button
-                          onClick={() => window.open(`${getBaseURL()}/admin/infoSheet/${sheet.id}`, '_blank')}
+                          onClick={() => window.open(`/admin/infoSheet/${sheet.id}`, '_blank')}
                           className="p-1.5 text-blue-600 hover:bg-blue-100 rounded transition-colors"
                           title="ดูรายละเอียด"
                         >
